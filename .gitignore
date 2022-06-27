@@ -1,3 +1,5 @@
+.vscode/*
+.gdb_history
 # Prerequisites
 *.d
 
@@ -30,3 +32,5 @@
 *.exe
 *.out
 *.app
+*.elf
+*.img
