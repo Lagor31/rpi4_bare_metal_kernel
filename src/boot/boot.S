@@ -1,3 +1,10 @@
+//1MB for initial boot alloc, used to setup real kernel Heap allocator
+.section ".boot_alloc"
+.space 1 * 1024 * 1024, 0
+
+.section ".heap"
+.space 16 * 1024 * 1024, 0
+
 .section ".text.boot"  // Make sure the linker puts this at the start of the kernel image
 
 .global _start  // Execution starts here
@@ -25,6 +32,6 @@ _start:
     cbnz    w2, 3b               // Loop if non-zero
 
     // Jump to our main() routine in C (make sure it doesn't return)
-4:  bl      main
+4:  bl      kernel_main
     // In case it does return, halt the master core too
     b       1b

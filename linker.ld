@@ -12,6 +12,20 @@ SECTIONS
         *(COMMON)
         __bss_end = .;
     }
+    .boot_alloc (NOLOAD) : {
+        . = ALIGN(16);
+        _boot_alloc_start = .;
+        *(.boot_alloc .boot_alloc.*)
+        *(COMMON)
+        _boot_alloc_end = .;
+    }
+    .heap (NOLOAD) : {
+        . = ALIGN(16);
+        _heap_start = .;
+        *(.heap .heap.*)
+        *(COMMON)
+        _heap_end = .;
+    }
     _end = .;
 
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
