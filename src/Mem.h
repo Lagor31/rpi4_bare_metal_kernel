@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 
-
 class MMIO {
  public:
   static void write(long reg, unsigned int val);
@@ -25,23 +24,26 @@ class MMIO {
 
 class MemoryAllocator {
  public:
- /*  MemoryAllocator(){};
-  MemoryAllocator(long *, long *); */
+  MemoryAllocator(){};
+  MemoryAllocator(void *, void *);
   virtual void *alloc(unsigned size) = 0;
   virtual void free(void *p) = 0;
-  virtual void addChunk(long *, long *) = 0;
+  virtual void addChunk(void *, void *) = 0;
   virtual unsigned long freeSpace() = 0;
+  virtual unsigned char *getPtr() = 0;
 };
 
 /*
 Global Kernel Allocator
 Can be set to use different backends at runtime
 */
-class KernelAlloc {
+
+class GlobalKernelAlloc {
  private:
   static MemoryAllocator *kalloc;
 
  public:
+  static MemoryAllocator *getAllocator();
   static void setAllocator(MemoryAllocator *in);
   static void *alloc(unsigned size);
   static void free(void *p);

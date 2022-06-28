@@ -1,6 +1,6 @@
 C++FILES = $(wildcard src/*.cpp src/**/*.cpp )
 HEADERS = $(wildcard src/*.h src/**/*.h )
-ASMFILES = $(wildcard **/*.S)
+ASMFILES = $(wildcard src/asm/*.S)
 OBJ = ${C++FILES:.cpp=.o}
 
 
@@ -13,7 +13,8 @@ RPI?=3
 
 all: clean kernel8.img
 
-boot.o: src/boot/boot.S
+
+boot.o: src/boot/boot.S 
 	$(G++) $(GCCFLAGS) -c src/boot/boot.S -o src/boot/boot.o
 
 %.o: %.cpp ${HEADERS}

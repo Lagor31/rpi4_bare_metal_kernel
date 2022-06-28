@@ -5,31 +5,30 @@
 class BootAllocator : public MemoryAllocator {
  public:
   BootAllocator(){};
-  BootAllocator(long *s, long *e) {
-    if (created) return;
-    ptr = (unsigned char *)s;
+  BootAllocator(unsigned char *s, unsigned char *e) {
+    ptr = s;
     bytes_left = (long)e - (long)s;
-    created = true;
   };
 
   unsigned long freeSpace() { return bytes_left; }
 
   void *alloc(unsigned size) {
-    if (created && size <= bytes_left) {
+    if (size <= bytes_left) {
       bytes_left -= size;
-      void *out = ptr;
+      unsigned char *out = ptr;
       ptr += size;
       return out;
     }
     return (void *)0;
   };
+
   void free(void *p) { return; };
-  void addChunk(long *, long *) { return; };
+  void addChunk(void *, void *) { return; };
+  unsigned char *getPtr() { return ptr; };
 
  private:
   unsigned char *ptr;
   long bytes_left;
-  bool created;
 };
 
 #endif

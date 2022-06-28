@@ -1,15 +1,24 @@
 #include "Mem.h"
 
-MemoryAllocator *KernelAlloc::kalloc;
+#include "mem/KernelHeapAllocator.h"
 
-void KernelAlloc::setAllocator(MemoryAllocator *in) {
-  KernelAlloc::kalloc = in;
+MemoryAllocator *GlobalKernelAlloc::kalloc = NULL;
+
+MemoryAllocator *GlobalKernelAlloc::getAllocator() { return GlobalKernelAlloc::kalloc; };
+
+void GlobalKernelAlloc::setAllocator(MemoryAllocator *in) {
+  GlobalKernelAlloc::kalloc = in;
 }
-void *KernelAlloc::alloc(unsigned size) {
-  return KernelAlloc::kalloc->alloc(size);
+
+void *GlobalKernelAlloc::alloc(unsigned size) {
+  return GlobalKernelAlloc::getAllocator()->alloc(size);
 }
-void KernelAlloc::free(void *p) { return KernelAlloc::kalloc->free(p); };
-unsigned long KernelAlloc::freeSpace() { return kalloc->freeSpace(); }
+void GlobalKernelAlloc::free(void *p) {
+  return GlobalKernelAlloc::getAllocator()->free(p);
+};
+unsigned long GlobalKernelAlloc::freeSpace() {
+  return getAllocator()->freeSpace();
+}
 
 void MMIO::write(long reg, unsigned int val) {
   *(volatile unsigned int *)reg = val;
@@ -17,13 +26,13 @@ void MMIO::write(long reg, unsigned int val) {
 
 unsigned int MMIO::read(long reg) { return *(volatile unsigned int *)reg; }
 
-void *operator new(size_t size) { return KernelAlloc::alloc(size); }
-void *operator new[](size_t size) { return KernelAlloc::alloc(size); }
+void *operator new(size_t size) { return GlobalKernelAlloc::alloc(size); }
+void *operator new[](size_t size) { return GlobalKernelAlloc::alloc(size); }
 
-void operator delete(void *p) { KernelAlloc::free(p); }
-void operator delete(void *p, unsigned long) { KernelAlloc::free(p); }
+void operator delete(void *p) { GlobalKernelAlloc::free(p); }
+void operator delete(void *p, unsigned long) { GlobalKernelAlloc::free(p); }
 
-void operator delete[](void *p) { KernelAlloc::free(p); }
+void operator delete[](void *p) { GlobalKernelAlloc::free(p); }
 
 // Keep compiler happy about pure virtual methods
 extern "C" void __cxa_pure_virtual() {}

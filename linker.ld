@@ -19,6 +19,7 @@ SECTIONS
         *(COMMON)
         _boot_alloc_end = .;
     }
+    . = _boot_alloc_end;
     .heap (NOLOAD) : {
         . = ALIGN(16);
         _heap_start = .;
