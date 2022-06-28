@@ -4,7 +4,6 @@
 
 KernelHeapAllocator::KernelHeapAllocator(unsigned char *s, unsigned char *e) {
   ptr = s;
-  Console::print("In constructor\ns = 0x%x ptr = 0x%x\n", s, ptr);
   bytes_left = (long)e - (long)s;
 };
 

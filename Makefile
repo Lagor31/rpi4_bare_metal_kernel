@@ -1,18 +1,24 @@
+# $@ = target file
+# $< = first dependency
+# $^ = all dependencies
+
 C++FILES = $(wildcard src/*.cpp src/**/*.cpp )
 HEADERS = $(wildcard src/*.h src/**/*.h )
 ASMFILES = $(wildcard src/asm/*.S)
 OBJ = ${C++FILES:.cpp=.o}
 
 
-GCCFLAGS = -Wall -O2 -ffreestanding -fno-exceptions -fno-rtti
+GCCFLAGS = -Wall -O2 -ffreestanding -fno-exceptions -fno-leading-underscore -fno-rtti
 G++ = aarch64-linux-gnu-g++
 LD = aarch64-linux-gnu-ld
 OBJCOPY = aarch64-linux-gnu-objcopy
 GDB = gdb-multiarch
 RPI?=3
 
-all: clean kernel8.img
+all: kernel8.img
 
+asm: $(ASMFILES)
+	$(G++) $(GCCFLAGS) -c  $< -o src/asm/functions.o
 
 boot.o: src/boot/boot.S 
 	$(G++) $(GCCFLAGS) -c src/boot/boot.S -o src/boot/boot.o
@@ -20,9 +26,9 @@ boot.o: src/boot/boot.S
 %.o: %.cpp ${HEADERS}
 	$(G++) $(GCCFLAGS) -DRPI=$(RPI) -g -O0 -c $< -o $@
 
-kernel8.img: boot.o ${OBJ}
+kernel8.img: boot.o asm ${OBJ}
 	mkdir -p build
-	$(LD) -nostdlib src/boot/boot.o $(OBJ) -n -T linker.ld -o build/kernel8.elf
+	$(LD) -nostdlib src/boot/boot.o src/asm/functions.o $(OBJ) -n -T linker.ld -o build/kernel8.elf
 	$(OBJCOPY) -O binary build/kernel8.elf build/kernel8.img
 
 debug: kernel8.img 
