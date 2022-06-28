@@ -4,13 +4,13 @@
 #include "drivers/Uart.h"
 #include "mem/BootAllocator.h"
 #include "mem/KernelHeapAllocator.h"
+#include "stdlib/Stdlib.h"
 
 extern void *_boot_alloc_start;
 extern void *_boot_alloc_end;
 
 extern void *_heap_start;
 extern void *_heap_end;
-
 
 extern "C" void _wait_for_event();
 
@@ -35,6 +35,14 @@ extern "C" void kernel_main() {
       (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
   GlobalKernelAlloc::setAllocator(kha);
 
-  Console::print("wfe: 0x%x\n", &_wait_for_event);
+  Vector<int> v = Vector<int>();
+  v.push_back(31);
+  v.push_back(33);
+  v.push_back(32);
+  v.push_back(35);
+
+  // v->push_back(1);
+  for (int i : v) Console::print("%d\n", i);
+
   while (1) _wait_for_event();
 }
