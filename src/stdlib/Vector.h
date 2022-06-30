@@ -36,14 +36,14 @@ class Vector {
 };
 
 template <class T>
-inline Vector<T>::Vector() {
+Vector<T>::Vector() {
   my_capacity = 0;
   my_size = 0;
   buffer = 0;
 }
 
 template <class T>
-inline Vector<T>::Vector(const Vector<T>& v) {
+Vector<T>::Vector(const Vector<T>& v) {
   my_size = v.my_size;
   my_capacity = v.my_capacity;
   buffer = new T[my_size];
@@ -51,14 +51,14 @@ inline Vector<T>::Vector(const Vector<T>& v) {
 }
 
 template <class T>
-inline Vector<T>::Vector(unsigned int size) {
+Vector<T>::Vector(unsigned int size) {
   my_capacity = size;
   my_size = size;
   buffer = new T[size];
 }
 
 template <class T>
-inline Vector<T>::Vector(unsigned int size, const T& initial) {
+Vector<T>::Vector(unsigned int size, const T& initial) {
   my_size = size;
   my_capacity = size;
   buffer = new T[size];
@@ -67,7 +67,7 @@ inline Vector<T>::Vector(unsigned int size, const T& initial) {
 }
 
 template <class T>
-inline Vector<T>& Vector<T>::operator=(const Vector<T>& v) {
+Vector<T>& Vector<T>::operator=(const Vector<T>& v) {
   delete[] buffer;
   my_size = v.my_size;
   my_capacity = v.my_capacity;
@@ -77,38 +77,38 @@ inline Vector<T>& Vector<T>::operator=(const Vector<T>& v) {
 }
 
 template <class T>
-inline typename Vector<T>::iterator Vector<T>::begin() {
+typename Vector<T>::iterator Vector<T>::begin() {
   return buffer;
 }
 
 template <class T>
-inline typename Vector<T>::iterator Vector<T>::end() {
+typename Vector<T>::iterator Vector<T>::end() {
   return buffer + size();
 }
 
 template <class T>
-inline T& Vector<T>::front() {
+T& Vector<T>::front() {
   return buffer[0];
 }
 
 template <class T>
-inline T& Vector<T>::back() {
+T& Vector<T>::back() {
   return buffer[my_size - 1];
 }
 
 template <class T>
-inline void Vector<T>::push_back(const T& v) {
+void Vector<T>::push_back(const T& v) {
   if (my_size >= my_capacity) reserve(my_capacity + 5);
   buffer[my_size++] = v;
 }
 
 template <class T>
-inline void Vector<T>::pop_back() {
+void Vector<T>::pop_back() {
   my_size--;
 }
 
 template <class T>
-inline void Vector<T>::reserve(unsigned int capacity) {
+void Vector<T>::reserve(unsigned int capacity) {
   if (buffer == 0) {
     my_size = 0;
     my_capacity = 0;
@@ -126,34 +126,33 @@ inline void Vector<T>::reserve(unsigned int capacity) {
 }
 
 template <class T>
-inline unsigned int Vector<T>::size() const  //
-{
+unsigned int Vector<T>::size() const {
   return my_size;
 }
 
 template <class T>
-inline void Vector<T>::resize(unsigned int size) {
+void Vector<T>::resize(unsigned int size) {
   reserve(size);
   my_size = size;
 }
 
 template <class T>
-inline T& Vector<T>::operator[](unsigned int index) {
+T& Vector<T>::operator[](unsigned int index) {
   return buffer[index];
 }
 
 template <class T>
-inline unsigned int Vector<T>::capacity() const {
+unsigned int Vector<T>::capacity() const {
   return my_capacity;
 }
 
 template <class T>
-inline Vector<T>::~Vector() {
+Vector<T>::~Vector() {
   delete[] buffer;
 }
 
 template <class T>
-inline void Vector<T>::clear() {
+void Vector<T>::clear() {
   my_capacity = 0;
   my_size = 0;
   buffer = 0;

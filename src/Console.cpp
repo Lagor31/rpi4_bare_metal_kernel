@@ -1,11 +1,14 @@
 #include "Console.h"
 
-#include "stdlib/Stdlib.h"
 #include <cstdarg>
 
-Console *Console::kernel_console;
+#include "stdlib/Stdlib.h"
+
+Console *Console::kernel_console = nullptr;
 
 void Console::print(const char *format, ...) {
+  if (kernel_console == nullptr) return;
+
   char **arg = (char **)&format;
   int c;
   char buf[40];

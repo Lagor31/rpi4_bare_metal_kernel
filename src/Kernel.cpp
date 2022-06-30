@@ -5,6 +5,8 @@
 #include "mem/BootAllocator.h"
 #include "mem/KernelHeapAllocator.h"
 #include "stdlib/Stdlib.h"
+#include "stdlib/String.h"
+#include "stdlib/Vector.h"
 
 extern void *_boot_alloc_start;
 extern void *_boot_alloc_end;
@@ -24,6 +26,7 @@ extern "C" void kernel_main() {
   GPIO *gpio = new GPIO();
   UART *uart = new UART(gpio);
   Console::setKernelConsole(uart);
+  Console::print("\n\n\n\n\n\n######################\n");
   DriverManager::load(gpio);
   DriverManager::load(uart);
   Console::print("BootAlloc Start: 0x%x BootAlloc end: 0x%x\n",
@@ -41,8 +44,19 @@ extern "C" void kernel_main() {
   v.push_back(32);
   v.push_back(35);
 
-  // v->push_back(1);
+  Vector<int> v1 = v;
+  Console::print("V:\n");
   for (int i : v) Console::print("%d\n", i);
+
+  Console::print("V1:\n");
+  for (int i : v1) Console::print("%d\n", i);
+  Console::print("3 elem: %d\n", v1[2]);
+
+  String s = String("string1");
+  String l = String(" && string 2");
+  Console::print("S: %s\n", (s + l).get());
+  s.swp(l);
+  Console::print("Swap: %s\n", l.get());
 
   while (1) _wait_for_event();
 }

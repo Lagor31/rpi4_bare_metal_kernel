@@ -37,6 +37,6 @@ debug: kernel8.img
 
 run: kernel8.img 
 	qemu-system-aarch64 -d cpu_reset -s -M raspi3 -serial null -serial stdio -kernel build/kernel8.elf 
-
+	
 clean:
 	/bin/rm  -f src/*.o src/**/*.o build > /dev/null 2> /dev/null || true
