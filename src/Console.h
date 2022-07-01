@@ -1,5 +1,8 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
+namespace ltl {
+
+namespace console {
 
 class Console {
  public:
@@ -12,5 +15,8 @@ class Console {
  private:
   static Console *kernel_console;
 };
+}  // namespace console
+
+}  // namespace ltl
 
 #endif

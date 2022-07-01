@@ -3,6 +3,9 @@
 #include "Console.h"
 #include "mem/KernelHeapAllocator.h"
 
+
+using namespace ltl::console;
+
 MemoryAllocator *GlobalKernelAlloc::kalloc = nullptr;
 
 MemoryAllocator *GlobalKernelAlloc::getAllocator() {
@@ -30,19 +33,19 @@ void MMIO::write(long reg, unsigned int val) {
 unsigned int MMIO::read(long reg) { return *(volatile unsigned int *)reg; }
 
 void *operator new(size_t size) {
-  Console::print("New called\n");
+  Console::print("New called Size: %d\n", size);
   return GlobalKernelAlloc::alloc(size);
 }
 void *operator new[](size_t size) {
-  Console::print("New[] called\n");
+  Console::print("New[] called Size: %d\n", size);
   return GlobalKernelAlloc::alloc(size);
 }
 void operator delete(void *p) {
   Console::print("Delete called\n");
   GlobalKernelAlloc::free(p);
 }
-void operator delete(void *p, unsigned long) {
-  Console::print("Delete long called\n");
+void operator delete(void *p, unsigned long s) {
+  Console::print("Delete long called Size: %d\n", s);
   GlobalKernelAlloc::free(p);
 }
 void operator delete[](void *p) {

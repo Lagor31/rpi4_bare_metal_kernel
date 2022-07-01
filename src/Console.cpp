@@ -4,6 +4,9 @@
 
 #include "stdlib/Stdlib.h"
 
+
+using namespace ltl::console;
+
 Console *Console::kernel_console = nullptr;
 
 void Console::print(const char *format, ...) {

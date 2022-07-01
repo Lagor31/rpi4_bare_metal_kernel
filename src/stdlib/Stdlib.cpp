@@ -1,5 +1,11 @@
 #include "Stdlib.h"
 
+unsigned long Std::getCurrentEL() {
+  register unsigned long x0 __asm__("x0");
+  __asm__("mrs x0, CurrentEL;" : : : "%x0");
+  return x0 >> 2;
+}
+
 /*  Format a string and print it on the screen, just like the libc
    function printf. */
 

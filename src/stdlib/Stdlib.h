@@ -5,7 +5,9 @@
 
 class Std {
  public:
+  static unsigned long getCurrentEL();
   static void itoa(char *buf, int base, int d);
+
   static unsigned long strlen(const char *s) {
     unsigned long len = 0;
     while (*s != '\0') {
@@ -31,7 +33,5 @@ class Std {
     return temp;
   }
 };
-
-
 
 #endif

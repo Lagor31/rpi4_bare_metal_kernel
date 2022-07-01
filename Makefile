@@ -7,8 +7,8 @@ HEADERS = $(wildcard src/*.h src/**/*.h )
 ASMFILES = $(wildcard src/asm/*.S)
 OBJ = ${C++FILES:.cpp=.o}
 
-
-GCCFLAGS = -Wall -O2 -ffreestanding -fno-exceptions -fno-leading-underscore -fno-rtti
+#																						  disable FPU
+GCCFLAGS = -Wall -O2 -ffreestanding -fno-exceptions -fno-leading-underscore -fno-rtti -mgeneral-regs-only
 G++ = aarch64-linux-gnu-g++
 LD = aarch64-linux-gnu-ld
 OBJCOPY = aarch64-linux-gnu-objcopy
@@ -32,7 +32,7 @@ kernel8.img: boot.o asm ${OBJ}
 	$(OBJCOPY) -O binary build/kernel8.elf build/kernel8.img
 
 debug: kernel8.img 
-	qemu-system-aarch64 -S -d cpu_reset -s -M raspi3 -serial null -serial stdio -kernel build/kernel8.elf &
+	qemu-system-aarch64 -S -d cpu_reset -d int -s -M raspi3 -serial null -serial stdio -kernel build/kernel8.elf &
 	${GDB} -ex "target remote localhost:1234" -ex "symbol-file build/kernel8.elf"
 
 run: kernel8.img 

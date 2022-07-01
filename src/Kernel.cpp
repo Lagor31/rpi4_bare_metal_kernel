@@ -8,6 +8,8 @@
 #include "stdlib/String.h"
 #include "stdlib/Vector.h"
 
+using namespace ltl::console;
+
 extern void *_boot_alloc_start;
 extern void *_boot_alloc_end;
 
@@ -27,6 +29,7 @@ extern "C" void kernel_main() {
   UART *uart = new UART(gpio);
   Console::setKernelConsole(uart);
   Console::print("\n\n\n\n\n\n######################\n");
+  Console::print("Current EL: %u\n", Std::getCurrentEL());
   DriverManager::load(gpio);
   DriverManager::load(uart);
   Console::print("BootAlloc Start: 0x%x BootAlloc end: 0x%x\n",
@@ -47,7 +50,7 @@ extern "C" void kernel_main() {
   Vector<int> v1 = v;
   Console::print("V:\n");
   for (int i : v) Console::print("%d\n", i);
-
+  delete &v;
   Console::print("V1:\n");
   for (int i : v1) Console::print("%d\n", i);
   Console::print("3 elem: %d\n", v1[2]);
