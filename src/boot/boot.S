@@ -1,3 +1,15 @@
+#include "sysregs.h"
+
+/* #if RPI == 4
+    #define LOCAL_CONTROL   0xff800000
+    #define LOCAL_PRESCALER 0xff800008
+#else
+    #define LOCAL_CONTROL   0x40000000
+    #define LOCAL_PRESCALER 0x40000008
+#endif
+
+#define OSC_FREQ        54000000 */
+
 //1MB for initial boot alloc, used to setup real kernel Heap allocator
 .section ".boot_alloc"
 .space 1 * 1024 * 1024, 0
@@ -10,6 +22,12 @@
 .global _start  // Execution starts here
 
 _start:
+
+   /*  ldr     x0, =LOCAL_CONTROL   // Sort out the timer
+    str     wzr, [x0]
+    mov     w1, 0x80000000
+    str     w1, [x0, #(LOCAL_PRESCALER - LOCAL_CONTROL)]   */
+
     // Check processor ID is zero (executing on main core), else hang
     mrs     x1, mpidr_el1
     and     x1, x1, #3
@@ -19,9 +37,16 @@ _start:
     b       1b
 2:  // We're on the main core!
 _core_0:
+
+    //TODO: PRoblematic
+   /*  mov     x0, #0x33ff
+    msr     cptr_el3, x0 	 // Disable coprocessor traps to EL3
+    mov     x0, #3 << 20
+    msr     cpacr_el1, x0	 // Enable FP/SIMD at EL1 
+  */
     // Set stack to start below our code
     ldr     x1, =_start
-
+ 
     mrs     x0, CurrentEL
     and     x0, x0, #12 // clear reserved bits
 
@@ -55,7 +80,7 @@ _core_0:
     msr     spsr_el2, x2
     adr     x2, 5f
     msr     elr_el2, x2
-    eret
+    eret  
 
 5:  mov     sp, x1
 

@@ -1,4 +1,5 @@
 #include "Console.h"
+#include "IRQ.h"
 #include "Mem.h"
 #include "drivers/Gpio.h"
 #include "drivers/Uart.h"
@@ -18,7 +19,12 @@ extern void *_heap_end;
 
 extern "C" void _wait_for_event();
 
+
 extern "C" void kernel_main() {
+  irq_init_vectors();
+  enable_interrupt_controller();
+  irq_enable();
+
   BootAllocator boot_allocator = BootAllocator(
       (unsigned char *)&_boot_alloc_start, (unsigned char *)&_boot_alloc_end);
 
@@ -28,6 +34,9 @@ extern "C" void kernel_main() {
   GPIO *gpio = new GPIO();
   UART *uart = new UART(gpio);
   Console::setKernelConsole(uart);
+
+  timer_init();
+
   Console::print("\n\n\n\n\n\n######################\n");
   Console::print("Current EL: %u\n", Std::getCurrentEL());
   DriverManager::load(gpio);
@@ -60,6 +69,14 @@ extern "C" void kernel_main() {
   Console::print("S: %s\n", (s + l).get());
   s.swp(l);
   Console::print("Swap: %s\n", l.get());
+
+  /* void *crash = (void *)0xffffffffffffffff;
+  ((char *)crash)[0] = 'd';  
+   */
+  for (int i = 80; i > 0; --i) {
+    wait_msec(2000);
+    Console::print("#");
+  }
 
   while (1) _wait_for_event();
 }

@@ -3,6 +3,8 @@
 
 #include <cstddef>
 
+extern "C" void _wait_for_event();
+
 class Std {
  public:
   static unsigned long getCurrentEL();

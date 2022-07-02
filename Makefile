@@ -7,7 +7,7 @@ HEADERS = $(wildcard src/*.h src/**/*.h )
 ASMFILES = $(wildcard src/asm/*.S)
 OBJ = ${C++FILES:.cpp=.o}
 
-#																						  disable FPU
+#																						  disable FPU -mgeneral-regs-only
 GCCFLAGS = -Wall -O2 -ffreestanding -fno-exceptions -fno-leading-underscore -fno-rtti -mgeneral-regs-only
 G++ = aarch64-linux-gnu-g++
 LD = aarch64-linux-gnu-ld
