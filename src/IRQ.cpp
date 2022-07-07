@@ -1,131 +1,137 @@
+#include "IRQ.h"
+
+#include <stddef.h>
+#include <stdint.h>
+
+#include "ARMTimer.h"
 #include "Console.h"
+#include "GIC.h"
+#include "LegacyInt.h"
 #include "Mem.h"
 #include "boot/sysregs.h"
 #include "stdlib/Stdlib.h"
 
+extern "C" void _enable_interrupts();
+
 using namespace ltl::console;
-
-struct timer_regs {
-  volatile unsigned int control_status;
-  volatile unsigned int counter_lo;
-  volatile unsigned int counter_hi;
-  volatile unsigned int compare[4];
-};
-
-#define REGS_TIMER ((struct timer_regs *)(MMIO::PERIPHERAL_BASE + 0x00003000))
-
-struct arm_irq_regs_2711 {
-  volatile unsigned int irq0_pending_0;
-  volatile unsigned int irq0_pending_1;
-  volatile unsigned int irq0_pending_2;
-  volatile unsigned int res0;
-  volatile unsigned int irq0_enable_0;
-  volatile unsigned int irq0_enable_1;
-  volatile unsigned int irq0_enable_2;
-  volatile unsigned int res1;
-  volatile unsigned int irq0_disable_0;
-  volatile unsigned int irq0_disable_1;
-  volatile unsigned int irq0_disable_2;
-};
-
-typedef struct arm_irq_regs_2711 arm_irq_regs;
-
-#define REGS_IRQ ((arm_irq_regs *)(MMIO::PERIPHERAL_BASE + 0x0000B200))
-
-enum vc_irqs {
-  SYS_TIMER_IRQ_0 = 1,
-  SYS_TIMER_IRQ_1 = 2,
-  SYS_TIMER_IRQ_2 = 4,
-  SYS_TIMER_IRQ_3 = 8,
-  AUX_IRQ = (1 << 29),
-  AUX_IRQ2 = (1 << 30)
-
-};
-
-void enable_interrupt_controller() {
-  REGS_IRQ->irq0_enable_0 =
-      SYS_TIMER_IRQ_1 | SYS_TIMER_IRQ_3 | AUX_IRQ | AUX_IRQ2;
+//#define RPI 4
+// Memory-Mapped I/O output
+static inline void mmio_write(intptr_t reg, uint32_t data) {
+  *(volatile uint32_t *)reg = data;
 }
 
-void disable_interrupt_controller() { REGS_IRQ->irq0_enable_0 = 0; }
+// Memory-Mapped I/O input
+static inline uint32_t mmio_read(intptr_t reg) {
+  return *(volatile uint32_t *)reg;
+}
+static inline void io_halt(void) { asm volatile("wfi"); }
 
-#define CLOCKHZ 1000000
+extern void enable_irq(void);
+extern void disable_irq(void);
 
-const unsigned int timer1_int = CLOCKHZ;
-const unsigned int timer3_int = CLOCKHZ / 4;
+static unsigned int cntfrq = 0;
 
-unsigned int timer1_val = 0;
-unsigned int timer3_val = 0;
+void enable_cntv(void) {
+  unsigned int cntv_ctl;
+  cntv_ctl = 1;
+  asm volatile("msr cntv_ctl_el0, %0" ::"r"(cntv_ctl));
+}
+
+void disable_cntv(void) {
+  unsigned int cntv_ctl;
+  cntv_ctl = 0;
+  asm volatile("msr cntv_ctl_el0, %0" ::"r"(cntv_ctl));
+}
+
+unsigned long read_cntvct(void) {
+  unsigned long val;
+  asm volatile("mrs %0, cntvct_el0" : "=r"(val));
+  return (val);
+}
+
+unsigned int read_cntv_tval(void) {
+  unsigned int val;
+  asm volatile("mrs %0, cntv_tval_el0" : "=r"(val));
+  return val;
+}
+
+void write_cntv_tval(unsigned int val) {
+  asm volatile("msr cntv_tval_el0, %0" ::"r"(val));
+  return;
+}
+
+unsigned int read_cntfrq(void) {
+  unsigned int val;
+  asm volatile("mrs %0, cntfrq_el0" : "=r"(val));
+  return val;
+}
+
+#if RPI == 3
+#define LOCAL_TIMER_BASE 0x40000000
+#define CORE0_TIMER_IRQCNTL 0x40000040
+#define CORE0_IRQ_SOURCE 0x40000060
+
+#else
+#define LOCAL_TIMER_BASE 0xFF800000
+#define CORE0_TIMER_IRQCNTL 0xFF800040
+#define CORE0_IRQ_SOURCE 0xFF800060
+
+#endif
+
+void routing_core0cntv_to_core0irq(void) {
+  mmio_write(CORE0_TIMER_IRQCNTL, 0x08 | 1);
+}
+
+unsigned int read_core0timer_pending(void) {
+  unsigned int tmp;
+  tmp = mmio_read(CORE0_IRQ_SOURCE);
+  return tmp;
+}
+
+
+
+
+extern "C" void c_irq_handler(void) {
+
+  Console::print("IRQ!\n");
+  print_gic_state();
+  unsigned int cntvct;
+  unsigned int val;
+
+  disable_irq();
+  if (read_core0timer_pending() & 0x08) {
+    Console::print("handler CNTV_TVAL: ");
+    val = read_cntv_tval();
+    Console::print("0x%x\n", val);
+
+    write_cntv_tval(cntfrq);  // clear cntv interrupt and set next 1sec timer.
+    cntvct = read_cntvct();
+    Console::print("handler CNTVCT   : 0x%x\n", cntvct);
+    Console::print("handler CNTVCT TVAL   : 0x%x\n", read_cntv_tval);
+  }
+
+  enable_irq();
+  return;
+}
+
+void raw_write_daif(uint32_t daif) {
+  __asm__ __volatile__("msr DAIF, %0\n\t" : : "r"(daif) : "memory");
+}
 
 void timer_init() {
-  timer1_val = REGS_TIMER->counter_lo;
-  timer1_val += timer1_int;
-  REGS_TIMER->compare[1] = timer1_val;
+  /* cntfrq = read_cntfrq();
+  write_cntv_tval(cntfrq);  // clear cntv interrupt and set next 1 sec timer.
+  Console::print("CNTV_TVAL: 0x%x\n", read_cntv_tval());
+  routing_core0cntv_to_core0irq(); */
 
-  timer3_val = REGS_TIMER->counter_lo;
-  timer3_val += timer3_int;
-  REGS_TIMER->compare[3] = timer3_val;
-}
+  //gic400_init((void *)0xFF840000UL);
 
-void wait_msec(unsigned int n) {
-  register unsigned int count = REGS_TIMER->counter_lo;
-  REGS_TIMER->compare[1] = count + (n * 1000);
-  unsigned int comp = REGS_TIMER->compare[1];
-  do {
-    count = REGS_TIMER->counter_lo;
-  } while (count < comp);
-}
+  new_gic_init();
+  // enable_cntv();
 
-void handle_timer_1() {
-  Console::print("Timer1");
+  enable_irq();
 
-  timer1_val += timer1_int;
-  REGS_TIMER->compare[1] = timer1_val;
-  REGS_TIMER->control_status |= SYS_TIMER_IRQ_1;
+  // raw_write_daif(2);
 
-  unsigned int progval = timer1_val / timer1_int;
-  if (progval <= 100) {
-    Console::print("x");
-  } else {
-    Console::print("!\n");
-  }
-}
-
-void handle_timer_3() {
-  Console::print("Timer3");
-
-  timer3_val += timer3_int;
-  REGS_TIMER->compare[3] = timer3_val;
-  REGS_TIMER->control_status |= SYS_TIMER_IRQ_3;
-
-  unsigned int progval = timer3_val / timer3_int;
-  if (progval <= 100) {
-    Console::print("x");
-  } else {
-    Console::print("!\n");
-  }
-}
-
-extern "C" void handle_error() {
-  unsigned int irq = REGS_IRQ->irq0_pending_0;
-  Console::print("Error! %d\n", irq);
-  //_wait_for_event();
-}
-
-extern "C" void handle_irq() {
-  unsigned int irq = REGS_IRQ->irq0_pending_0;
-  Console::print("Exception irq! %d\n", irq);
-  while (irq) {
-    if (irq & SYS_TIMER_IRQ_1) {
-      irq &= ~SYS_TIMER_IRQ_1;
-
-      handle_timer_1();
-    }
-
-    if (irq & SYS_TIMER_IRQ_3) {
-      irq &= ~SYS_TIMER_IRQ_3;
-
-      handle_timer_3();
-    }
-  }
+  //_enable_interrupts();
 }
