@@ -19,12 +19,7 @@ extern void *_heap_start;
 extern void *_heap_end;
 
 extern "C" void _wait_for_event();
-extern "C" void int_1_sec();
 
-extern "C" void panic() {
-  print_gic_state();
-  Console::print("Panicking!\n");
-}
 
 void wait_msec(unsigned int n) {
   register unsigned long f, t, r;
@@ -84,28 +79,11 @@ extern "C" void kernel_main() {
   Console::print("Swap: %s\n", l.get());
 
   timer_init();
-  RPI_WaitMicroSeconds(5000000);
+  RPI_WaitMicroSecondsT1(1000000);
+  RPI_WaitMicroSecondsT3(5000000);
 
-  /*   rpi_sys_timer_t *sys_timer = RPI_GetSystemTimer();
-
-    while (true) {
-      RPI_WaitMicroSeconds(1000000);
-      _wait_for_event();
-      uint32_t cmp1active = sys_timer->control_status & 0b0010;
-      // print_gic_state();
-      Console::print(
-          "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO: "
-          "0x%x\n\n",
-          sys_timer->control_status, sys_timer->compare0, sys_timer->compare1,
-          sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo);
-        if (cmp1active) {
-         Console::print("INT1: %d\n", cmp1active);
-         sys_timer->control_status = 0b0010;
-       }
-      // Console::print("INT1 After clear: %d\n", sys_timer->control_status);
-    } */
-  /*   void *crash = (void *)0xffffffffffffffff;
-    ((char *)crash)[0] = 'd'; */
-
+  /* void *crash = (void *)0xffffffffffffffff;
+  ((char *)crash)[0] = 'd';
+ */
   while (1) _wait_for_event();
 }

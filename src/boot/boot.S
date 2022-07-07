@@ -108,10 +108,34 @@ _core_0:
 
 .global panic
 hang:
+    stp   x0,  x1,  [sp, #-16]!
+    stp   x2,  x3,  [sp, #-16]!
+    stp   x4,  x5,  [sp, #-16]!
+    stp   x6,  x7,  [sp, #-16]!
+    stp   x8,  x9,  [sp, #-16]!
+    stp   x10, x11, [sp, #-16]!
+    stp   x12, x13, [sp, #-16]!
+    stp   x14, x15, [sp, #-16]!
+    stp   x16, x17, [sp, #-16]!
+    stp   x18, x19, [sp, #-16]!
+
     bl panic
-1:    
+
+    ldp   x18, x19, [sp], #16
+    ldp   x16, x17, [sp], #16
+    ldp   x14, x15, [sp], #16
+    ldp   x12, x13, [sp], #16
+    ldp   x10, x11, [sp], #16
+    ldp   x8,  x9,  [sp], #16
+    ldp   x6,  x7,  [sp], #16
+    ldp   x4,  x5,  [sp], #16
+    ldp   x2,  x3,  [sp], #16
+    ldp   x0,  x1,  [sp], #16
+    //eret
+
+ 1:    
     wfi
-    b     1b
+    b     1b 
 
 .globl enable_irq      
 .type enable_irq, @function
@@ -119,6 +143,12 @@ enable_irq:
     msr   daifclr, #2
     ret
 
+.globl get_el
+.type get_el, @function
+get_el:
+    mrs x0, CurrentEL
+    lsr x0, x0, #2
+    ret
 
 .globl disable_irq
 .type disable_irq, @function
@@ -126,24 +156,13 @@ disable_irq:
     msr   daifset, #2
     ret
 
-.global int_1_sec
-.type int_1_sec, @function
-int_1_sec:
-    mrs x1, CNTFRQ_EL0
-    msr CNTP_TVAL_EL0, x1
-    mov x0, 1
-    msr CNTP_CTL_EL0, x0
-    ret
 
-/* .global _enable_interrupts
-.type _enable_interrupts, @function
-_enable_interrupts:
-    mrs     r0, cpsr
-    bic     r0, r0, #0x80
-    msr     cpsr_c, r0
-    cpsie   i
-    mov     pc, lr
-    //ret   */
+.globl get_core
+.type get_core, @function
+get_core:
+    mrs x0, mpidr_el1
+    and x0, x0, #0xFF
+    ret
 
 irq:
     stp   x0,  x1,  [sp, #-16]!
@@ -157,7 +176,6 @@ irq:
     stp   x16, x17, [sp, #-16]!
     stp   x18, x19, [sp, #-16]!
 
-    //bl    c_irq_handler
     bl    irq_h
 
     ldp   x18, x19, [sp], #16

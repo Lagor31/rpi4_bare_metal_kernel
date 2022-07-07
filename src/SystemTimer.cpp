@@ -16,11 +16,12 @@ static rpi_sys_timer_t* rpiSystemTimer = (rpi_sys_timer_t*)RPI_SYSTIMER_BASE;
 
 rpi_sys_timer_t* RPI_GetSystemTimer(void) { return rpiSystemTimer; }
 
-void RPI_WaitMicroSeconds(uint32_t us) {
+void RPI_WaitMicroSecondsT1(uint32_t us) {
   volatile uint32_t ts = rpiSystemTimer->counter_lo;
   rpiSystemTimer->compare1 = ts + us;
-  //rpiSystemTimer->compare3 = ts + us * 2;
+}
 
-  /* while ((rpiSystemTimer->counter_lo - ts) < us) {
-  } */
+void RPI_WaitMicroSecondsT3(uint32_t us) {
+  volatile uint32_t ts = rpiSystemTimer->counter_lo;
+  rpiSystemTimer->compare3 = ts + us;
 }

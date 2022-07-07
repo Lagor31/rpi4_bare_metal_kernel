@@ -125,6 +125,7 @@ void timer_init() {
   routing_core0cntv_to_core0irq(); */
 
   //gic400_init((void *)0xFF840000UL);
+  disable_irq();
 
   new_gic_init();
   // enable_cntv();
