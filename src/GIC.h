@@ -115,7 +115,7 @@ typedef struct {
 
 extern void gic400_init(void* interrupt_controller_base);
 extern void print_gic_state();
-extern void new_gic_init();
+extern void gicInit();
 extern "C" unsigned int get_core();
 extern "C" unsigned int get_el();
 

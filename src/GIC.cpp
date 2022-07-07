@@ -96,15 +96,7 @@ void enable_interrupt_controller() {
   enable_interrupt(SYSTEM_TIMER_IRQ_1);
 }
 
-void new_gic_init() {
-  /*  gic400_init((void *)0xFF840000UL); */
-
-  /*   for (int i = 0; i < 100; ++i) {
-      enable_interrupt(i);
-      assign_target(i, 0);
-    } */
-
-  int number_of_interrupts = 0;
+void gicInit() {
   uint64_t interrupt_controller_base = 0xFF840000UL;
   gic400.gicd = (gic400_gicd_t*)(interrupt_controller_base + 0x1000);
   gic400.gicc = (gic400_gicc_t*)(interrupt_controller_base + 0x2000);
@@ -114,12 +106,11 @@ void new_gic_init() {
   gic400.gicd->ctl = GIC400_CTL_DISABLE;
   gic400.gicc->ctl = GIC400_CTL_DISABLE;
 
-  Console::print("FIrst Init ########################\n");
+  Console::print("First Init ########################\n");
   print_gic_state();
 
   MMIO::write(((long)&gic400.gicc->pm), 0x0000FFu);
 
-  // gic400.gicc->pm = 0xFF;
   gic400.gicc->bp = 2;
 
   assign_target(SYSTEM_TIMER_IRQ_1, 0);
@@ -140,22 +131,20 @@ extern "C" void panic() {
   unsigned int irq = irq_ack_reg & 0x2FF;
   Console::print("IRQ: 0x%d\n", irq);
   MMIO::write(GICC_EOIR, irq_ack_reg);
-
-  //enable_irq();
+  // enable_irq();
 }
 
 extern "C" void irq_h() {
   disable_irq();
 
-  Console::print("CORE: %d EL: %d\n", get_core(), get_el());
+  Console::print("CORE: %d EL: %d ", get_core(), get_el());
   unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
+  Console::print("IRQ ACK REQ 0x%x\n", irq_ack_reg);
   unsigned int irq = irq_ack_reg & 0x2FF;
   rpi_sys_timer_t* sys_timer = RPI_GetSystemTimer();
   print_gic_state();
   switch (irq) {
     case (SYSTEM_TIMER_IRQ_1):
-
-      // handle_timer_irq();
       Console::print("Timer IRQ 1 Received!\n");
       Console::print(
           "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO: "
@@ -169,8 +158,6 @@ extern "C" void irq_h() {
       break;
 
     case (SYSTEM_TIMER_IRQ_3):
-
-      // handle_timer_irq();
       Console::print("Timer IRQ 3 Received!\n");
       Console::print(
           "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO: "
@@ -179,7 +166,7 @@ extern "C" void irq_h() {
           sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo);
       // print_gic_state();
       MMIO::write(GICC_EOIR, irq_ack_reg);
-      RPI_GetSystemTimer()->control_status |= 0b0100;
+      RPI_GetSystemTimer()->control_status |= 0b1000;
       RPI_WaitMicroSecondsT3(10000000);
       break;
 
@@ -189,80 +176,4 @@ extern "C" void irq_h() {
   }
 
   enable_irq();
-}
-
-void gic400_init(void* interrupt_controller_base) {
-  int number_of_interrupts = 0;
-
-  gic400.gicd = (gic400_gicd_t*)(interrupt_controller_base + 0x1000);
-  gic400.gicc = (gic400_gicc_t*)(interrupt_controller_base + 0x2000);
-
-  /* Disable the controller so we can configure it before it passes any
-     interrupts to the CPU */
-  gic400.gicd->ctl = GIC400_CTL_DISABLE;
-  gic400.gicc->ctl = GIC400_CTL_DISABLE;
-
-  Console::print("FIrst Init ########################\n");
-  print_gic_state();
-
-  MMIO::write(((long)&gic400.gicc->pm), 0x0000FFu);
-
-  // gic400.gicc->pm = 0xFF;
-  gic400.gicc->bp = 2;
-
-  Console::print("IID: 0x%x\n", gic400.gicd->iid);
-  /* Get the number of interrupt lines implemented in the GIC400 controller */
-  number_of_interrupts = GIC400_TYPE_ITLINESNUMBER_GET(gic400.gicd->type) * 32;
-  Console::print("Supporting %d ints\n", number_of_interrupts);
-  /* The actual number returned by the ITLINESNUMBER is the number of registered
-     implemented. The actual number of interrupt lines available is
-     (ITLINESNUMBER * 32) */
-
-  for (unsigned i = 0; i < (number_of_interrupts >> 5); ++i) {
-    unsigned offs = i << 2;
-    if (!i) {
-      // CPU::MMIOWrite32(distrAddr + GICD_ISENABLERn + offs, 0x0000FFFFu);
-      MMIO::write(((long)&gic400.gicd->isenable + offs), 0x0000FFFFu);
-      // CPU::MMIOWrite32(distrAddr + GICD_ICENABLERn + offs, 0xFFFF0000u);
-      // gic400.gicd->icenable[offs] = 0xFFFF0000u;
-      MMIO::write(((long)&gic400.gicd->icenable + offs), 0xFFFF0000u);
-
-    } else
-      // CPU::MMIOWrite32(distrAddr + GICD_ICENABLERn + offs, 0xFFFFFFFFu);
-      // gic400.gicd->icenable[offs] = 0xFFFFFFFFu;
-      MMIO::write(((long)&gic400.gicd->icenable + offs), 0xFFFFFFFFu);
-
-    MMIO::write(((long)&gic400.gicd->icpend + offs), 0xFFFFFFFFu);
-    MMIO::write(((long)&gic400.gicd->icactive + offs), 0xFFFFFFFFu);
-    MMIO::write(((long)&gic400.gicd->igroup + offs), 0);
-    /*
-          gic400.gicd->icpend[offs] = 0xFFFFFFFFu;
-         gic400.gicd->icactive[offs] = 0xFFFFFFFFu;
-         gic400.gicd->igroup[offs] = 0;  */
-
-    /*   CPU::MMIOWrite32(distrAddr + GICD_ICPENDRn + offs, 0xFFFFFFFFu);
-      CPU::MMIOWrite32(distrAddr + GICD_ICACTIVERn + offs, 0xFFFFFFFFu);
-      CPU::MMIOWrite32(distrAddr + GICD_IGROUPRn + offs, 0u); */
-  }
-
-  for (unsigned i = 0; i < (number_of_interrupts >> 2); ++i) {
-    gic400.gicd->ipriority[i << 2] = 0x00000000;
-    gic400.gicd->istargets[i << 2] = 0x01010101;
-
-    /*   MMIO::write(((long)&gic400.gicd->ipriority + (i << 2)), 0);
-      MMIO::write(((long)&gic400.gicd->istargets + (i << 2)), 0x01010101); */
-
-    /* CPU::MMIOWrite32(distrAddr + GICD_IPRIORITYRn + (i << 2), 0x00000000);
-    CPU::MMIOWrite32(distrAddr + GICD_ITARGETSRn + (i << 2), 0x01010101); */
-  }
-
-  for (unsigned i = 0; i < (number_of_interrupts >> 4); ++i)
-    MMIO::write(((long)&gic400.gicd->icfg + (i << 2)), 0);
-  //  gic400.gicd->icfg[i << 2] = 0x00000000;
-  gic400.gicc->pm = 0xFF;
-
-  // CPU::MMIOWrite32(distrAddr + GICD_ICFGRn + (i << 2), 0);
-
-  gic400.gicc->ctl = GIC400_CTL_ENABLE;
-  gic400.gicd->ctl = GIC400_CTL_ENABLE;
 }
