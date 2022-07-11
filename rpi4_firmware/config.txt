@@ -2,3 +2,6 @@ arm_64bit=1
 init_uart_clock=48000000
 enable_gic=1
 core_freq_min=500
+disable_commandline_tags=1
+armstub=armstub8-gic.bin
+kernel_old=0
