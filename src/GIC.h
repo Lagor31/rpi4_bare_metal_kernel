@@ -113,10 +113,9 @@ typedef struct {
   volatile unsigned int dir;
 } gic400_gicc_t;
 
-extern void gic400_init(void* interrupt_controller_base);
 extern void print_gic_state();
 extern void gicInit();
+void spin_msec(unsigned int n);
 extern "C" unsigned int get_core();
 extern "C" unsigned int get_el();
-
 #endif

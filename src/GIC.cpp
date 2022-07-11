@@ -91,11 +91,6 @@ void assign_target(unsigned int irq, unsigned int cpu) {
   MMIO::write(targetRegister, MMIO::read(targetRegister) | (1 << shift));
 }
 
-void enable_interrupt_controller() {
-  assign_target(SYSTEM_TIMER_IRQ_1, 0);
-  enable_interrupt(SYSTEM_TIMER_IRQ_1);
-}
-
 void gicInit() {
   uint64_t interrupt_controller_base = 0xFF840000UL;
   gic400.gicd = (gic400_gicd_t*)(interrupt_controller_base + 0x1000);
@@ -106,7 +101,7 @@ void gicInit() {
   gic400.gicd->ctl = GIC400_CTL_DISABLE;
   gic400.gicc->ctl = GIC400_CTL_DISABLE;
 
-  Console::print("First Init ########################\n");
+  Console::print("First Init\n ########################\n");
   print_gic_state();
 
   MMIO::write(((long)&gic400.gicc->pm), 0x0000FFu);
@@ -116,8 +111,8 @@ void gicInit() {
   assign_target(SYSTEM_TIMER_IRQ_1, 0);
   enable_interrupt(SYSTEM_TIMER_IRQ_1);
 
-  assign_target(SYSTEM_TIMER_IRQ_3, 0);
-  enable_interrupt(SYSTEM_TIMER_IRQ_3);
+/*   assign_target(SYSTEM_TIMER_IRQ_3, 2);
+  enable_interrupt(SYSTEM_TIMER_IRQ_3); */
 
   gic400.gicc->ctl = GIC400_CTL_ENABLE;
   gic400.gicd->ctl = GIC400_CTL_ENABLE;
@@ -126,35 +121,50 @@ void gicInit() {
 extern "C" void panic() {
   disable_irq();
   print_gic_state();
-  Console::print("Panicking!\n");
+  Console::print("Panicking on Core %d!\n", get_core());
   unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
   unsigned int irq = irq_ack_reg & 0x2FF;
   Console::print("IRQ: 0x%d\n", irq);
   MMIO::write(GICC_EOIR, irq_ack_reg);
   // enable_irq();
 }
+unsigned int* _spin = (unsigned int*)0xd8;
+extern unsigned int _core_count1;
+
+void spin_msec(unsigned int n) {
+  rpi_sys_timer_t* sys_timer = RPI_GetSystemTimer();
+
+  unsigned int target = sys_timer->counter_lo + (n * 1000);
+  unsigned int t = sys_timer->counter_lo;
+
+  while (t < target) {
+    t = sys_timer->counter_lo;
+  }
+}
+
+#if RPI == 4
 
 extern "C" void irq_h() {
   disable_irq();
-
+  // Console::print("CORE COUNT1: 0x%d\n", _core_count1);
   Console::print("CORE: %d EL: %d ", get_core(), get_el());
   unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
   Console::print("IRQ ACK REQ 0x%x\n", irq_ack_reg);
   unsigned int irq = irq_ack_reg & 0x2FF;
   rpi_sys_timer_t* sys_timer = RPI_GetSystemTimer();
-  print_gic_state();
+  // print_gic_state();
   switch (irq) {
     case (SYSTEM_TIMER_IRQ_1):
       Console::print("Timer IRQ 1 Received!\n");
-      Console::print(
+      /* Console::print(
           "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO: "
           "0x%x\n\n",
           sys_timer->control_status, sys_timer->compare0, sys_timer->compare1,
-          sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo);
+          sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo); */
       // print_gic_state();
       MMIO::write(GICC_EOIR, irq_ack_reg);
       RPI_GetSystemTimer()->control_status |= 0b0010;
-      RPI_WaitMicroSecondsT1(2000000);
+      RPI_WaitMicroSecondsT1(1000000);
       break;
 
     case (SYSTEM_TIMER_IRQ_3):
@@ -177,3 +187,5 @@ extern "C" void irq_h() {
 
   enable_irq();
 }
+
+#endif

@@ -1,6 +1,7 @@
 SECTIONS
 {
     . = 0x80000;     /* Kernel load address for AArch64 */
+    
     .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     PROVIDE(_data = .);
@@ -26,6 +27,22 @@ SECTIONS
         *(.heap .heap.*)
         *(COMMON)
         _heap_end = .;
+    }
+    . = _heap_end;
+    
+    .cpu1Stack :    {
+        . = ALIGN(16);
+        __stack_start  = .;
+        . = . + 512;
+        __cpu1_stack  = .;
+    }
+    .cpu2Stack :    {
+        . = . + 512;
+        __cpu2_stack  = .;
+    }
+    .cpu3Stack :    {
+        . = . + 512;
+        __cpu3_stack  = .;
     }
     _end = .;
 

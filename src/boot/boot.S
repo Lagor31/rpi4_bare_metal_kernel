@@ -22,13 +22,36 @@
 .global _start  // Execution starts here
 
 _start:   
+    //w0 = dtb addr 32 bit
+    //In our setup, only core0@EL3 gets here
+
     // Check processor ID is zero (executing on main core), else hang
     mrs     x1, mpidr_el1
-    and     x1, x1, #3
-    cbz     x1, 2f
+    and     x1, x1, #3 
+    sub     x1, x1, #0 // We want CORE0
+    cbz     x1, _core_0 
     // We're not on the main core, so hang in an infinite wait loop
+    adr     x5, spin_cpu0
 1:  wfe
-    b       1b
+_checking_addr:
+    ldr     x4, [x5, x1, lsl #3]
+    cmp	x4, 0
+	beq	1b
+    //cbz     x4, 1b
+
+_core_active:
+    ldr     x2, =__stack_start    // Get ourselves a fresh stack - location depends on CPU core asking
+    lsl     x1, x1, #9           // Multiply core_number by 512
+    add     x3, x2, x1           // Add to the address
+    mov     sp, x3
+
+    mov     x0, #0
+    mov     x1, #0
+    mov     x2, #0
+    mov     x3, #0    
+    blr     x4 
+
+    b       1b  
 2:  // We're on the main core!
 _core_0:
  /* 
@@ -37,8 +60,8 @@ _core_0:
     mov     w1, 0x80000000
     str     w1, [x0, #(LOCAL_PRESCALER - LOCAL_CONTROL)]  */
 
-/*      ldr     x0, =OSC_FREQ
-    msr     cntfrq_el0, x0 */
+    ldr     x0, =OSC_FREQ
+    msr     cntfrq_el0, x0 
     
     //TODO: PRoblematic
     /*  
@@ -63,7 +86,7 @@ _core_0:
     msr     spsr_el3, x2
     adr     x2, 5f
     msr     elr_el3, x2
-    eret
+    eret 
 
 5:  cmp     x0, #4 //EL==1
     beq     5f
@@ -83,12 +106,12 @@ _core_0:
     ldr x0, =vector
     msr vbar_el1, x0 
 
-    // change execution level to EL1
+  // change execution level to EL1
     mov     x2, #0x3c4
     msr     spsr_el2, x2
     adr     x2, 5f
     msr     elr_el2, x2
-    eret  
+    eret   
 
 5:  mov     sp, x1
 
@@ -103,7 +126,7 @@ _core_0:
     // Jump to our main() routine in C (make sure it doesn't return)
 4:  bl      kernel_main
     // In case it does return, halt the master core too
-    b       1b
+    b       1f
 
 
 .global panic
@@ -131,38 +154,11 @@ hang:
     ldp   x4,  x5,  [sp], #16
     ldp   x2,  x3,  [sp], #16
     ldp   x0,  x1,  [sp], #16
-    //eret
 
  1:    
     wfi
     b     1b 
 
-.globl enable_irq      
-.type enable_irq, @function
-enable_irq:
-    msr   daifclr, #2
-    ret
-
-.globl get_el
-.type get_el, @function
-get_el:
-    mrs x0, CurrentEL
-    lsr x0, x0, #2
-    ret
-
-.globl disable_irq
-.type disable_irq, @function
-disable_irq:
-    msr   daifset, #2
-    ret
-
-
-.globl get_core
-.type get_core, @function
-get_core:
-    mrs x0, mpidr_el1
-    and x0, x0, #0xFF
-    ret
 
 irq:
     stp   x0,  x1,  [sp, #-16]!
@@ -224,3 +220,23 @@ vector:
     b hang
 .balign 128
     b hang
+
+ .balign 4096
+.ltorg
+.globl spin_cpu0
+spin_cpu0:
+        .quad 0
+
+.globl spin_cpu1
+spin_cpu1:
+        .quad 0
+
+.globl spin_cpu2
+spin_cpu2:
+        .quad 0
+
+.globl spin_cpu3
+spin_cpu3:
+        .quad 0 
+
+ 
