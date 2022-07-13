@@ -146,7 +146,7 @@ void spin_msec(unsigned int n) {
 
 extern "C" void irq_h() {
   disable_irq();
-  // Console::print("CORE COUNT1: 0x%d\n", _core_count1);
+   //Console::print("CORE COUNT1: 0x%d\n", _core_count1);
   Console::print("CORE: %d EL: %d ", get_core(), get_el());
   unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
   Console::print("IRQ ACK REQ 0x%x\n", irq_ack_reg);
@@ -155,12 +155,12 @@ extern "C" void irq_h() {
   // print_gic_state();
   switch (irq) {
     case (SYSTEM_TIMER_IRQ_1):
-      Console::print("Timer IRQ 1 Received!\n");
-      /* Console::print(
+      //Console::print("Timer IRQ 1 Received!\n");
+       Console::print(
           "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO: "
           "0x%x\n\n",
           sys_timer->control_status, sys_timer->compare0, sys_timer->compare1,
-          sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo); */
+          sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo); 
       // print_gic_state();
       MMIO::write(GICC_EOIR, irq_ack_reg);
       RPI_GetSystemTimer()->control_status |= 0b0010;
@@ -168,12 +168,12 @@ extern "C" void irq_h() {
       break;
 
     case (SYSTEM_TIMER_IRQ_3):
-      Console::print("Timer IRQ 3 Received!\n");
+      /* Console::print("Timer IRQ 3 Received!\n");
       Console::print(
           "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO: "
           "0x%x\n\n",
           sys_timer->control_status, sys_timer->compare0, sys_timer->compare1,
-          sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo);
+          sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo); */
       // print_gic_state();
       MMIO::write(GICC_EOIR, irq_ack_reg);
       RPI_GetSystemTimer()->control_status |= 0b1000;

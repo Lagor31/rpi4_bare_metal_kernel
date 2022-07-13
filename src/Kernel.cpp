@@ -66,9 +66,6 @@ extern "C" void kernel_main() {
   Console::print("Core 1 started");
 
   while (1) {
-    /*  start_core2(print_core_id);
-     start_core3(print_core_id); */
-
     _wait_for_event();
   }
 }

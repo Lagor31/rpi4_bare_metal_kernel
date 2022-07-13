@@ -18,10 +18,10 @@ extern "C" void c_init_core() {
   Console::print("@@@@@@@@@@@@@@@@\n\n Core %d active! \n\n@@@@@@@@@@@@@@@\n",
                  get_core());
   while (true) {
-    Console::print("@@@@@@@@@@@@@@@@ Core %d still alive! @@@@@@@@@@@@@@@\n",
-                   get_core());
+ /*    Console::print("@@@@@@@@@@@@@@@@ Core %d still alive! @@@@@@@@@@@@@@@\n",
+                   get_core()); */
     spin_msec(200);
-    //_wait_for_event();
+    _wait_for_event();
   }
 }
 void start_core1(void (*func)(void)) {

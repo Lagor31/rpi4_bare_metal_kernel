@@ -34,3 +34,8 @@
 *.app
 *.elf
 *.img
+rpi4_firmware/armstub/.vscode/targets.log
+rpi4_firmware/armstub/.vscode/settings.json
+rpi4_firmware/armstub/.vscode/dryrun.log
+rpi4_firmware/armstub/.vscode/configurationCache.log
+rpi4_firmware/armstub/armstub8-gic.tmp
