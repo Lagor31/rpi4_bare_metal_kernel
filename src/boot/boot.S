@@ -1,12 +1,8 @@
 #include "sysregs.h"
 
-#if RPI==4
 .set LOCAL_CONTROL, 0xff800000
 .set LOCAL_PRESCALER, 0xff800008
-#else
-.set LOCAL_CONTROL, 0x40000000
-.set LOCAL_PRESCALER, 0x40000008
-#endif
+
 
 .set OSC_FREQ, 54000000
 

@@ -142,7 +142,6 @@ void spin_msec(unsigned int n) {
   }
 }
 
-#if RPI == 4
 
 extern "C" void irq_h() {
   disable_irq();
@@ -188,4 +187,4 @@ extern "C" void irq_h() {
   enable_irq();
 }
 
-#endif
+

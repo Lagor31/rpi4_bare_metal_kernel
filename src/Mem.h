@@ -9,13 +9,7 @@ class MMIO {
   static unsigned int read(long reg);
 
   enum ADDR {
-#if RPI == 3
-    PERIPHERAL_BASE = 0x3F000000,
-#else
     PERIPHERAL_BASE = 0xFE000000,
-    
-#endif
-   
     GPFSEL0 = PERIPHERAL_BASE + 0x200000,
     GPSET0 = PERIPHERAL_BASE + 0x20001C,
     GPCLR0 = PERIPHERAL_BASE + 0x200028,

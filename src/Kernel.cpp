@@ -1,4 +1,3 @@
-#include "ArmTimer.h"
 #include "Console.h"
 #include "GIC.h"
 #include "IRQ.h"
