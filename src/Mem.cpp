@@ -4,7 +4,7 @@
 #include "mem/KernelHeapAllocator.h"
 
 
-using namespace ltl::console;
+using  ltl::console::Console;
 
 MemoryAllocator *GlobalKernelAlloc::kalloc = nullptr;
 

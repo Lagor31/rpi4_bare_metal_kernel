@@ -17,7 +17,7 @@ void enable_interrupt_controller() {
 }
 void disable_interrupt_controller() { REGS_IRQ->irq0_enable_0 = 0; }
 
-using namespace ltl::console;
+using  ltl::console::Console;
 //#define RPI 4
 // Memory-Mapped I/O output
 static inline void mmio_write(intptr_t reg, uint32_t data) {

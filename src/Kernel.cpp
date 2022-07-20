@@ -12,7 +12,7 @@
 #include "stdlib/String.h"
 #include "stdlib/Vector.h"
 
-using namespace ltl::console;
+using  ltl::console::Console;
 
 extern void *_boot_alloc_start;
 extern void *_boot_alloc_end;

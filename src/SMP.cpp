@@ -6,11 +6,11 @@
 #include "GIC.h"
 #include "stdlib/Stdlib.h"
 
-using namespace ltl::console;
+using ltl::console::Console;
 
 extern "C" void wakeup_core(unsigned int core, unsigned long func);
 
-void store32(unsigned long address, unsigned long value) {
+void store64(unsigned long address, unsigned long value) {
   *(unsigned long *)address = value;
 }
 
@@ -25,37 +25,27 @@ extern "C" void c_init_core() {
   }
 }
 void start_core1(void (*func)(void)) {
-  store32((unsigned long)0xE0, (unsigned long)func);
+  store64((unsigned long)0xE0, (unsigned long)func);
   asm volatile("dc civac, %0" : : "r"(0xE0) : "memory");
   asm volatile("sev");
 }
 
 void start_core2(void (*func)(void)) {
-  store32((unsigned long)0xE8, (unsigned long)func);
+  store64((unsigned long)0xE8, (unsigned long)func);
   asm volatile("dc civac, %0" : : "r"(0xE8) : "memory");
   asm volatile("sev");
 }
 
 void start_core3(void (*func)(void)) {
-  store32((unsigned long)0xF0, (unsigned long)func);
+  store64((unsigned long)0xF0, (unsigned long)func);
   asm volatile("dc civac, %0" : : "r"(0xF0) : "memory");
   asm volatile("sev");
 }
 
-void store64(unsigned long address, unsigned long long value) {
-  *(unsigned long *)address = value;
-}
 
-unsigned long load32(unsigned long address) {
-  return *(unsigned long *)address;
-}
 unsigned long load64(unsigned long address) {
   return *(unsigned long *)address;
 }
-unsigned int *_core_1_wakeup = (unsigned int *)0xe4;
-unsigned int *_core_1_wakeup0 = (unsigned int *)0xe0;
-
-#define CORE1_ADDR ((volatile __attribute__((aligned(4))) uint64_t *)(0xE0))
 
 void print_core_id() {
   Console::print("Running on core: %d\n", get_core());

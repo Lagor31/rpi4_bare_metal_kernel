@@ -27,45 +27,12 @@ _start:
     sub     x1, x1, #0 // We want CORE0
     cbz     x1, _core_0 
     // We're not on the main core, so hang in an infinite wait loop
-    adr     x5, spin_cpu0
 1:  wfe
-_checking_addr:
-    ldr     x4, [x5, x1, lsl #3]
-    cmp	x4, 0
-	beq	1b
-    //cbz     x4, 1b
+    b 1b
 
-_core_active:
-    ldr     x2, =__stack_start    // Get ourselves a fresh stack - location depends on CPU core asking
-    lsl     x1, x1, #9           // Multiply core_number by 512
-    add     x3, x2, x1           // Add to the address
-    mov     sp, x3
-
-    mov     x0, #0
-    mov     x1, #0
-    mov     x2, #0
-    mov     x3, #0    
-    blr     x4 
-
-    b       1b  
 2:  // We're on the main core!
 _core_0:
- /* 
-    ldr     x0, =LOCAL_CONTROL   // Sort out the timer
-    str     wzr, [x0]
-    mov     w1, 0x80000000
-    str     w1, [x0, #(LOCAL_PRESCALER - LOCAL_CONTROL)]  */
 
-    ldr     x0, =OSC_FREQ
-    msr     cntfrq_el0, x0 
-    
-    //TODO: PRoblematic
-    /*  
-    mov     x0, #0x33ff
-    msr     cptr_el3, x0 	 // Disable coprocessor traps to EL3
-    mov     x0, #3 << 20
-    msr     cpacr_el1, x0	 // Enable FP/SIMD at EL1 
-    */
 
     // Set stack to start below our code
     ldr     x1, =_start

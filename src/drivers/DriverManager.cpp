@@ -1,7 +1,7 @@
 #include "../Console.h"
 #include "Driver.h"
 
-using namespace ltl::console;
+using  ltl::console::Console;
 
 Driver* DriverManager::drivers[];
 

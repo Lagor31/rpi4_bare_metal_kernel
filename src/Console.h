@@ -3,7 +3,6 @@
 namespace ltl {
 
 namespace console {
-
 class Console {
  public:
   // virtual void write(const char *s, ...) = 0;

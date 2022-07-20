@@ -6,7 +6,7 @@
 #include "Mem.h"
 #include "SystemTimer.h"
 
-using namespace ltl::console;
+using  ltl::console::Console;
 
 typedef struct {
   gic400_gicd_t* gicd;

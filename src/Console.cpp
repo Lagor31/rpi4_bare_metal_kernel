@@ -5,7 +5,8 @@
 #include "stdlib/Stdlib.h"
 
 
-using namespace ltl::console;
+using  ltl::console::Console;
+
 
 Console *Console::kernel_console = nullptr;
 
