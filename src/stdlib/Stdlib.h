@@ -3,7 +3,7 @@
 
 #include <cstddef>
 
-extern "C" void _wait_for_event();
+extern "C" void _hang_forever();
 
 class Std {
  public:

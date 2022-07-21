@@ -29,7 +29,8 @@ SECTIONS
         _heap_end = .;
     }
     . = _heap_end;
-    
+    . = . + 512;
+
     .cpu1Stack :    {
         . = ALIGN(16);
         __stack_start  = .;

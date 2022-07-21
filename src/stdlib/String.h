@@ -174,4 +174,5 @@ String::String(String&& source) {
   str = source.str;
   source.str = nullptr;
 }
+
 #endif

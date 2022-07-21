@@ -12,7 +12,7 @@
 #include "stdlib/String.h"
 #include "stdlib/Vector.h"
 
-using  ltl::console::Console;
+using ltl::console::Console;
 
 extern void *_boot_alloc_start;
 extern void *_boot_alloc_end;
@@ -21,7 +21,6 @@ extern void *_heap_start;
 extern void *_heap_end;
 
 extern "C" void wakeup_core(uint32_t core, uint64_t func);
-extern "C" void _wait_for_event();
 
 extern "C" void init_core();
 extern "C" void kernel_main() {
@@ -64,7 +63,5 @@ extern "C" void kernel_main() {
   start_core1(&init_core);
   Console::print("Core 1 started");
 
-  while (1) {
-    _wait_for_event();
-  }
+  _hang_forever();
 }

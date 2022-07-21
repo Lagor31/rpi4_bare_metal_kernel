@@ -33,7 +33,6 @@ _start:
 2:  // We're on the main core!
 _core_0:
 
-
     // Set stack to start below our code
     ldr     x1, =_start
  
@@ -76,6 +75,7 @@ _core_0:
     msr     elr_el2, x2
     eret   
 
+
 5:  mov     sp, x1
 
     // Clean the BSS section
@@ -103,7 +103,7 @@ hang:
     stp   x12, x13, [sp, #-16]!
     stp   x14, x15, [sp, #-16]!
     stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
+    stp   x18, x19, [sp, #-16]! 
 
     bl panic
 
@@ -116,7 +116,7 @@ hang:
     ldp   x6,  x7,  [sp], #16
     ldp   x4,  x5,  [sp], #16
     ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
+    ldp   x0,  x1,  [sp], #16 
 
  1:    
     wfi
@@ -150,6 +150,7 @@ irq:
     eret
 
 .balign 4096
+.global vector
 vector:
 .balign 128
     b hang

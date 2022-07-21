@@ -6,7 +6,7 @@
 #include "Mem.h"
 #include "SystemTimer.h"
 
-using  ltl::console::Console;
+using ltl::console::Console;
 
 typedef struct {
   gic400_gicd_t* gicd;
@@ -111,8 +111,8 @@ void gicInit() {
   assign_target(SYSTEM_TIMER_IRQ_1, 0);
   enable_interrupt(SYSTEM_TIMER_IRQ_1);
 
-/*   assign_target(SYSTEM_TIMER_IRQ_3, 2);
-  enable_interrupt(SYSTEM_TIMER_IRQ_3); */
+  /*   assign_target(SYSTEM_TIMER_IRQ_3, 2);
+    enable_interrupt(SYSTEM_TIMER_IRQ_3); */
 
   gic400.gicc->ctl = GIC400_CTL_ENABLE;
   gic400.gicd->ctl = GIC400_CTL_ENABLE;
@@ -142,25 +142,24 @@ void spin_msec(unsigned int n) {
   }
 }
 
-
 extern "C" void irq_h() {
   disable_irq();
-   //Console::print("CORE COUNT1: 0x%d\n", _core_count1);
-  Console::print("CORE: %d EL: %d ", get_core(), get_el());
+  // Console::print("CORE COUNT1: 0x%d\n", _core_count1);
+  // Console::print("CORE: %d EL: %d ", get_core(), get_el());
   unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
-  Console::print("IRQ ACK REQ 0x%x\n", irq_ack_reg);
+  // Console::print("IRQ ACK REQ 0x%x\n", irq_ack_reg);
   unsigned int irq = irq_ack_reg & 0x2FF;
   rpi_sys_timer_t* sys_timer = RPI_GetSystemTimer();
   // print_gic_state();
   switch (irq) {
     case (SYSTEM_TIMER_IRQ_1):
-      //Console::print("Timer IRQ 1 Received!\n");
-       Console::print(
-          "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO: "
-          "0x%x\n\n",
-          sys_timer->control_status, sys_timer->compare0, sys_timer->compare1,
-          sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo); 
-      // print_gic_state();
+      Console::print("\n\tTimer IRQ 1 Received! Waking up other cores!\n");
+      /*        Console::print(
+                "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO:
+         " "0x%x\n\n", sys_timer->control_status, sys_timer->compare0,
+         sys_timer->compare1, sys_timer->compare2, sys_timer->compare3,
+         sys_timer->counter_lo);
+       */      // print_gic_state();
       MMIO::write(GICC_EOIR, irq_ack_reg);
       RPI_GetSystemTimer()->control_status |= 0b0010;
       RPI_WaitMicroSecondsT1(1000000);
@@ -185,6 +184,5 @@ extern "C" void irq_h() {
   }
 
   enable_irq();
+  asm volatile("sev");
 }
-
-
