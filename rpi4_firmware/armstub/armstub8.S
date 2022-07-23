@@ -108,12 +108,12 @@ _start:
 	/* Set SMPEN */
 	mov x0, #CPUECTLR_EL1_SMPEN
 	msr CPUECTLR_EL1, x0
+
 #ifdef GIC
 		//Only for core0
         bl      setup_gic
 #endif
 	
-
 	mrs x6, MPIDR_EL1
 	and x6, x6, #0x3
 	cbz x6, primary_cpu

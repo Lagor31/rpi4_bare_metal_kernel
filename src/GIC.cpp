@@ -8,29 +8,7 @@
 
 using ltl::console::Console;
 
-typedef struct {
-  gic400_gicd_t* gicd;
-  gic400_gicc_t* gicc;
-} gic400_t;
-
-static gic400_t gic400;
-
-#define GIC_BASE 0xFF840000
-#define GICD_DIST_BASE (GIC_BASE + 0x00001000)
-#define GICC_CPU_BASE (GIC_BASE + 0x00002000)
-
-#define GICD_ENABLE_IRQ_BASE (GICD_DIST_BASE + 0x00000100)
-
-#define GICC_IAR (GICC_CPU_BASE + 0x0000000C)
-#define GICC_EOIR (GICC_CPU_BASE + 0x00000010)
-
-#define GIC_IRQ_TARGET_BASE (GICD_DIST_BASE + 0x00000800)
-
-// VC (=VideoCore) starts at 96
-#define SYSTEM_TIMER_IRQ_0 (0x60)  // 96
-#define SYSTEM_TIMER_IRQ_1 (0x61)  // 97
-#define SYSTEM_TIMER_IRQ_2 (0x62)  // 98
-#define SYSTEM_TIMER_IRQ_3 (0x63)  // 99
+gic400_t gic400;
 
 void print_gic_state() {
   /*
@@ -81,14 +59,14 @@ void enable_interrupt(unsigned int irq) {
 void assign_target(unsigned int irq, unsigned int cpu) {
   unsigned int n = irq / 4;
   unsigned int targetRegister = GIC_IRQ_TARGET_BASE + (4 * n);
-  // Currently we only enter the target CPU 0
-  // MMIO::write(targetRegister, MMIO::read(targetRegister) | (1 << 8));
-
   uint32_t byte_offset = irq % 4;
   uint32_t shift = byte_offset * 8 + cpu;
-  // GICD_ITARGETSRN->set[n] |= (1 << shift);
   Console::print("Shift %d\n", shift);
   MMIO::write(targetRegister, MMIO::read(targetRegister) | (1 << shift));
+}
+void send_sgi(unsigned int irq, unsigned int cpu){
+  MMIO::write(GICD_SGIR, (1 << (16 + cpu) | irq));
+  //Console::print("SGIR: 0x%x\n", gic400.gicd->sgi);
 }
 
 void gicInit() {
@@ -107,29 +85,24 @@ void gicInit() {
   MMIO::write(((long)&gic400.gicc->pm), 0x0000FFu);
 
   gic400.gicc->bp = 2;
+  //gic400.gicd->sgi |= (1 << 24);
 
   assign_target(SYSTEM_TIMER_IRQ_1, 0);
   enable_interrupt(SYSTEM_TIMER_IRQ_1);
 
-  /*   assign_target(SYSTEM_TIMER_IRQ_3, 2);
-    enable_interrupt(SYSTEM_TIMER_IRQ_3); */
+  assign_target(SYSTEM_TIMER_IRQ_3, 3);
+  enable_interrupt(SYSTEM_TIMER_IRQ_3);
+
+  assign_target(1, 0);
+  assign_target(1, 1);
+  assign_target(1, 2);
+  assign_target(1, 3);
+
+  enable_interrupt(1);
 
   gic400.gicc->ctl = GIC400_CTL_ENABLE;
   gic400.gicd->ctl = GIC400_CTL_ENABLE;
 }
-
-extern "C" void panic() {
-  disable_irq();
-  print_gic_state();
-  Console::print("Panicking on Core %d!\n", get_core());
-  unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
-  unsigned int irq = irq_ack_reg & 0x2FF;
-  Console::print("IRQ: 0x%d\n", irq);
-  MMIO::write(GICC_EOIR, irq_ack_reg);
-  // enable_irq();
-}
-unsigned int* _spin = (unsigned int*)0xd8;
-extern unsigned int _core_count1;
 
 void spin_msec(unsigned int n) {
   rpi_sys_timer_t* sys_timer = RPI_GetSystemTimer();
@@ -140,49 +113,4 @@ void spin_msec(unsigned int n) {
   while (t < target) {
     t = sys_timer->counter_lo;
   }
-}
-
-extern "C" void irq_h() {
-  disable_irq();
-  // Console::print("CORE COUNT1: 0x%d\n", _core_count1);
-  // Console::print("CORE: %d EL: %d ", get_core(), get_el());
-  unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
-  // Console::print("IRQ ACK REQ 0x%x\n", irq_ack_reg);
-  unsigned int irq = irq_ack_reg & 0x2FF;
-  rpi_sys_timer_t* sys_timer = RPI_GetSystemTimer();
-  // print_gic_state();
-  switch (irq) {
-    case (SYSTEM_TIMER_IRQ_1):
-      Console::print("\n\tTimer IRQ 1 Received! Waking up other cores!\n");
-      /*        Console::print(
-                "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO:
-         " "0x%x\n\n", sys_timer->control_status, sys_timer->compare0,
-         sys_timer->compare1, sys_timer->compare2, sys_timer->compare3,
-         sys_timer->counter_lo);
-       */      // print_gic_state();
-      MMIO::write(GICC_EOIR, irq_ack_reg);
-      RPI_GetSystemTimer()->control_status |= 0b0010;
-      RPI_WaitMicroSecondsT1(1000000);
-      break;
-
-    case (SYSTEM_TIMER_IRQ_3):
-      /* Console::print("Timer IRQ 3 Received!\n");
-      Console::print(
-          "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO: "
-          "0x%x\n\n",
-          sys_timer->control_status, sys_timer->compare0, sys_timer->compare1,
-          sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo); */
-      // print_gic_state();
-      MMIO::write(GICC_EOIR, irq_ack_reg);
-      RPI_GetSystemTimer()->control_status |= 0b1000;
-      RPI_WaitMicroSecondsT3(10000000);
-      break;
-
-    default:
-      Console::print("Unknown pending irq: %x\r\n", irq);
-      break;
-  }
-
-  enable_irq();
-  asm volatile("sev");
 }

@@ -8,25 +8,30 @@
 #include "stdlib/Stdlib.h"
 
 using ltl::console::Console;
+uint32_t first = 0;
 
 extern "C" void c_init_core() {
   enable_irq();
-  Console::print("@@@@@@@@@@@@@@@@\n\n Core %d active! \n\n@@@@@@@@@@@@@@@\n",
+  Console::print("@@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
                  get_core());
-
-  /*    if (get_core() == 1) {
-      uint64_t *err = (uint64_t *)0xffffffffffffff0;
-      *err = 1234567;
-    }  */
+  _hang_forever();
 
   while (true) {
-    spin_msec(get_core() * 10 + 100);
+    spin_msec(get_core() * 50);
+
+    /*  if (get_core() == 2 && first == 0) {
+       uint64_t *err = (uint64_t *)0xffffffffffffff0;
+       *err = 1234567;
+
+       Console::print("\n\n\nRecovered from exception \n\n");
+       first++;
+     } */
 
     Console::print(
         "@@@@@@@@@@@@@@@@ Core %d still alive at EL=%d! @@@@@@@@@@@@@@@\n",
         get_core(), get_el());
+
     asm volatile("wfe");
-    //_wait_for_event();
   }
 }
 
@@ -56,7 +61,4 @@ unsigned long load64(unsigned long address) {
   return *(unsigned long *)address;
 }
 
-void print_core_id() {
-  Console::print("Running on core: %d\n", get_core());
-  // while (true) _wait_for_event();
-}
+void print_core_id() { Console::print("Running on core: %d\n", get_core()); }

@@ -65,6 +65,26 @@
 #define GIC400_ICFG_LEVEL_SENSITIVE (0 << 1)
 #define GIC400_ICFG_EDGE_TRIGGERED (1 << 1)
 
+
+
+#define GIC_BASE 0xFF840000
+#define GICD_DIST_BASE (GIC_BASE + 0x00001000)
+#define GICC_CPU_BASE (GIC_BASE + 0x00002000)
+
+#define GICD_ENABLE_IRQ_BASE (GICD_DIST_BASE + 0x00000100)
+#define GICD_SGIR (GICD_DIST_BASE + 0x00000F00)
+
+#define GICC_IAR (GICC_CPU_BASE + 0x0000000C)
+#define GICC_EOIR (GICC_CPU_BASE + 0x00000010)
+
+#define GIC_IRQ_TARGET_BASE (GICD_DIST_BASE + 0x00000800)
+
+// VC (=VideoCore) starts at 96
+#define SYSTEM_TIMER_IRQ_0 (0x60)  // 96
+#define SYSTEM_TIMER_IRQ_1 (0x61)  // 97
+#define SYSTEM_TIMER_IRQ_2 (0x62)  // 98
+#define SYSTEM_TIMER_IRQ_3 (0x63)  // 99
+
 typedef struct {
   volatile unsigned int ctl;
   volatile const unsigned int type;
@@ -118,4 +138,13 @@ extern void gicInit();
 void spin_msec(unsigned int n);
 extern "C" unsigned int get_core();
 extern "C" unsigned int get_el();
+void send_sgi(unsigned int irq, unsigned int cpu);
+
+typedef struct {
+  gic400_gicd_t* gicd;
+  gic400_gicc_t* gicc;
+} gic400_t;
+
+extern gic400_t gic400;
+
 #endif

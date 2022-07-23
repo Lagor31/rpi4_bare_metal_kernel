@@ -27,6 +27,14 @@ disable_irq:
     msr   daifset, #2
     ret
 
+/* .globl elr_el1_inc
+.type elr_el1_inc, @function
+elr_el1_inc:
+    mrs x0, elr_el1
+    add x0, x0, #4
+    mrs elr_el1, x0
+    ret */
+
 .globl get_core
 .type get_core, @function
 get_core:

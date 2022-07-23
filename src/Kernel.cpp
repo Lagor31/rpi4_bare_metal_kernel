@@ -46,22 +46,30 @@ extern "C" void kernel_main() {
       (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
   GlobalKernelAlloc::setAllocator(kha);
 
+  Console::print("\n\ns uint_32t: %d \ns uint64_t: %d\ns ushort: %d\n",
+                 sizeof(uint32_t), sizeof(uint64_t), sizeof(unsigned short));
+
   timerInit();
-  /* void *crash = (void *)0xffffffffffffffff;
-  ((char *)crash)[0] = 'd';
- */
+  /*    void *crash = (void *)0xffffffffffffffff;
+    ((char *)crash)[0] = 'd'; */
+
   spin_msec(200);
 
   start_core3(&init_core);
-  Console::print("Core 3 started");
+  Console::print("Core 3 started\n");
   spin_msec(200);
 
   start_core2(&init_core);
-  Console::print("Core 2 started");
+  Console::print("Core 2 started\n");
 
   spin_msec(200);
   start_core1(&init_core);
-  Console::print("Core 1 started");
+  Console::print("Core 1 started\n");
 
+  /*   while (true) {
+      spin_msec(2000);
+
+    }
+   */
   _hang_forever();
 }
