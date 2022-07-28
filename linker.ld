@@ -4,11 +4,13 @@ SECTIONS
     .boot : {
         KEEP(*(.boot))
     }
-    
-    .text : { 
+
+    /* . = 0xFFFF000000000000; */
+    /* AT(0x80000 + SIZEOF(.boot) ) */
+    .text :  { 
          KEEP(*(.text)) 
         *(.text .text.* .gnu.linkonce.t*) 
-    }
+    } 
 
     .rodata : { 
         *(.rodata .rodata.* .gnu.linkonce.r*) 
