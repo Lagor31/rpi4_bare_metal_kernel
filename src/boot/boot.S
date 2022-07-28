@@ -13,7 +13,8 @@
 .section ".heap"
 .space 16 * 1024 * 1024, 0
 
-.section ".text.boot"  // Make sure the linker puts this at the start of the kernel image
+
+.section ".boot", #alloc, #execinstr // Make sure the linker puts this at the start of the kernel image
 
 .global _start  // Execution starts here
 

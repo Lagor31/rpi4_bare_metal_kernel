@@ -1,11 +1,25 @@
 SECTIONS
 {
-    . = 0x80000;     /* Kernel load address for AArch64 */
+    . = 0x80000;     /* Kernel load address for AArch64 (VMA)*/
+    .boot : {
+        KEEP(*(.boot))
+    }
     
-    .text : { KEEP(*(.text.boot)) *(.text .text.* .gnu.linkonce.t*) }
-    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
+    .text : { 
+         KEEP(*(.text)) 
+        *(.text .text.* .gnu.linkonce.t*) 
+    }
+
+    .rodata : { 
+        *(.rodata .rodata.* .gnu.linkonce.r*) 
+    }
+
     PROVIDE(_data = .);
-    .data : { *(.data .data.* .gnu.linkonce.d*) }
+
+    .data : { 
+        *(.data .data.* .gnu.linkonce.d*) 
+    }
+
     .bss (NOLOAD) : {
         . = ALIGN(16);
         __bss_start = .;
@@ -13,6 +27,7 @@ SECTIONS
         *(COMMON)
         __bss_end = .;
     }
+
     .boot_alloc (NOLOAD) : {
         . = ALIGN(16);
         _boot_alloc_start = .;
@@ -20,7 +35,9 @@ SECTIONS
         *(COMMON)
         _boot_alloc_end = .;
     }
+
     . = _boot_alloc_end;
+
     .heap (NOLOAD) : {
         . = ALIGN(16);
         _heap_start = .;
@@ -28,25 +45,33 @@ SECTIONS
         *(COMMON)
         _heap_end = .;
     }
-    . = _heap_end;
-    . = . + 512;
 
-    .cpu1Stack :    {
-        . = ALIGN(16);
-        __stack_start  = .;
+    . = _heap_end;
+
+    . = . + 512;
+    . = ALIGN(16);
+    __stack_start  = .;
+
+    .cpu1Stack (NOLOAD) :    {
         . = . + 512;
         __cpu1_stack  = .;
     }
-    .cpu2Stack :    {
+
+    . = ALIGN(16);
+    .cpu2Stack (NOLOAD):    {
         . = . + 512;
         __cpu2_stack  = .;
     }
-    .cpu3Stack :    {
+
+    . = ALIGN(16);
+    .cpu3Stack (NOLOAD):    {
         . = . + 512;
         __cpu3_stack  = .;
     }
+
     _end = .;
 
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }
+
 __bss_size = (__bss_end - __bss_start)>>3;
