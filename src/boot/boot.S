@@ -94,6 +94,8 @@ _launch_kernel:
     b       1f
 
 
+.section ".text"
+
 hang:
     stp   x0,  x1,  [sp, #-16]!
     stp   x2,  x3,  [sp, #-16]!
