@@ -89,7 +89,10 @@ _core_0:
     cbnz    w2, 3b               // Loop if non-zero 
 _launch_kernel:
     // Jump to our main() routine in C (make sure it doesn't return)
-4:  bl      kernel_main
+    
+    ldr    x2, =kernel_mmu_init
+    //Init MMU Here with &kernel_main = virt addr of kernel
+4:  br      x2
     // In case it does return, halt the master core too
     b       1f
 
