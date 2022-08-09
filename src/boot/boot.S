@@ -9,7 +9,6 @@
 .section ".heap"
 .space 16 * 1024 * 1024, 0
 
-
 .section ".boot", #alloc, #execinstr // Make sure the linker puts this at the start of the kernel image
 
 
@@ -114,17 +113,23 @@ _start_mmu:
     cbnz    w2, 3b               // Loop if non-zero  
 
 _launch_kernel:
-     /*  ldr x2, =LINEAR_MAP_BASE
-    add sp, sp, x2
-    //adr x1, kernel_mmu_init
-     add x1, x1, x2  */
-
     ldr x1, =kernel_main
    
 4:  blr x1
     wfe
     b       4b
 
+
+
+.balign 4096
+.global id_pg_dir
+id_pg_dir:
+    .space (3 * (1 << 12)), 0
+
+.balign 4096
+.global high_pg_dir
+high_pg_dir:
+    .space (6 * (1 << 12)), 0
 
 
 .globl memzero

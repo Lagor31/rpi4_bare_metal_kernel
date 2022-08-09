@@ -6,11 +6,6 @@ SECTIONS
         *(.boot_data*)
     }
 
-    . = ALIGN(0x1000);
-    id_pg_dir = .;
-    .boot_data.id_pg_dir : { . += (3 * (1 << 12)); }
-    high_pg_dir = .;
-    .boot_data.high_pg_dir : { . += (6 * (1 << 12)); }
     
      . = 0xFFFF000000000000 + 0x90000;
  
@@ -55,14 +50,14 @@ SECTIONS
 
     . = _boot_alloc_end;
 
-        . = ALIGN(0x1000);
+    . = ALIGN(0x1000);
 
     __stack_start  = .;
     . = . + 512;
 
     /* Grows Downwards! */
     . = ALIGN(16);
-    .cpu0Stack (NOLOAD): {
+    .cpu0Stack (NOLOAD) : {
         __cpu0_stack = . ;
     }
 
