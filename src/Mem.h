@@ -6,10 +6,11 @@
 class MMIO {
  public:
   static void write(long reg, unsigned int val);
-  static unsigned int read(long reg);
+  static unsigned int read(unsigned long reg);
 
   enum ADDR {
-    PERIPHERAL_BASE = 0xFE000000,
+    // 0xffff000000000000 +
+    PERIPHERAL_BASE = 0xffff000000000000 + 0xFE000000,
     GPFSEL0 = PERIPHERAL_BASE + 0x200000,
     GPSET0 = PERIPHERAL_BASE + 0x20001C,
     GPCLR0 = PERIPHERAL_BASE + 0x200028,

@@ -14,7 +14,7 @@ class GPIO : public Driver {
   void gpio_useAsAlt3(unsigned int pin_number);
   unsigned int read(long reg);
   unsigned int gpio_call(unsigned int pin_number, unsigned int value,
-                         unsigned int base, unsigned int field_size,
+                         unsigned long base, unsigned int field_size,
                          unsigned int field_max);
   unsigned int gpio_set(unsigned int pin_number, unsigned int value);
   unsigned int gpio_clear(unsigned int pin_number, unsigned int value);

@@ -66,7 +66,7 @@ void timerInit() {
   disable_irq();
   gicInit();
   RPI_WaitMicroSecondsT1(1000000);
-  // RPI_WaitMicroSecondsT3(10000000);
+  //RPI_WaitMicroSecondsT3(10000000);
   Console::print("Timer init on core: %d\n", get_core());
   enable_irq();
 }

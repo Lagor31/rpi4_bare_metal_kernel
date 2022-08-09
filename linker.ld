@@ -3,57 +3,70 @@ SECTIONS
     . = 0x80000;     /* Kernel load address for AArch64 (VMA)*/
     .boot : {
         KEEP(*(.boot))
+        *(.boot_data*)
     }
 
-    /* . = 0xFFFF000000000000; */
-    /* AT(0x80000 + SIZEOF(.boot) ) */
-    .text :  { 
+    . = ALIGN(0x1000);
+    id_pg_dir = .;
+    .boot_data.id_pg_dir : { . += (3 * (1 << 12)); }
+    high_pg_dir = .;
+    .boot_data.high_pg_dir : { . += (6 * (1 << 12)); }
+    
+     . = 0xFFFF000000000000 + 0x90000;
+ 
+     /* AT(0x80000 + SIZEOF(.boot) + SIZEOF( .boot_data.id_pg_dir) + SIZEOF( .boot_data.high_pg_dir)) */  
+    .text :  AT(0x90000)  { 
          KEEP(*(.text)) 
         *(.text .text.* .gnu.linkonce.t*) 
     } 
 
-    .rodata : { 
+    . = ALIGN(0x1000);
+
+    .rodata :  ALIGN(0x1000){ 
         *(.rodata .rodata.* .gnu.linkonce.r*) 
     }
 
+    . = ALIGN(0x1000);
+
     PROVIDE(_data = .);
 
-    .data : { 
+    .data :ALIGN(0x1000) { 
         *(.data .data.* .gnu.linkonce.d*) 
     }
+    . = ALIGN(0x1000);
 
-    .bss (NOLOAD) : {
+    .bss (NOLOAD) :ALIGN(0x1000) {
         . = ALIGN(16);
         __bss_start = .;
         *(.bss .bss.*)
         *(COMMON)
         __bss_end = .;
     }
+    . = ALIGN(0x1000);
 
-    .boot_alloc (NOLOAD) : {
+
+    .boot_alloc (NOLOAD) : ALIGN(0x1000){
         . = ALIGN(16);
         _boot_alloc_start = .;
         *(.boot_alloc .boot_alloc.*)
-        *(COMMON)
+        *(COMMON) 
         _boot_alloc_end = .;
     }
 
     . = _boot_alloc_end;
 
-    .heap (NOLOAD) : {
-        . = ALIGN(16);
-        _heap_start = .;
-        *(.heap .heap.*)
-        *(COMMON)
-        _heap_end = .;
+        . = ALIGN(0x1000);
+
+    __stack_start  = .;
+    . = . + 512;
+
+    /* Grows Downwards! */
+    . = ALIGN(16);
+    .cpu0Stack (NOLOAD): {
+        __cpu0_stack = . ;
     }
 
-    . = _heap_end;
-
-    . = . + 512;
     . = ALIGN(16);
-    __stack_start  = .;
-
     .cpu1Stack (NOLOAD) :    {
         . = . + 512;
         __cpu1_stack  = .;
@@ -70,7 +83,18 @@ SECTIONS
         . = . + 512;
         __cpu3_stack  = .;
     }
+        . = ALIGN(0x1000);
 
+
+    .heap (NOLOAD) : {
+        . = ALIGN(16);
+        _heap_start = .;
+        *(.heap .heap.*)
+        *(COMMON)
+        _heap_end = .;
+    }
+
+    . = _heap_end;
     _end = .;
 
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }

@@ -1,10 +1,6 @@
 #include "sysregs.h"
+#include "../mmu/Mmu.h"
 
-.set LOCAL_CONTROL, 0xff800000
-.set LOCAL_PRESCALER, 0xff800008
-
-
-.set OSC_FREQ, 54000000
 
 //1MB for initial boot alloc, used to setup real kernel Heap allocator
 .section ".boot_alloc"
@@ -15,6 +11,7 @@
 
 
 .section ".boot", #alloc, #execinstr // Make sure the linker puts this at the start of the kernel image
+
 
 .global _start  // Execution starts here
 
@@ -34,9 +31,6 @@ _start:
 2:  // We're on the main core!
 _core_0:
 
-    // Set stack to start below our code
-    ldr     x1, =_start
- 
     mrs     x0, CurrentEL
     and     x0, x0, #12 // clear reserved bits
 
@@ -54,7 +48,6 @@ _core_0:
 5:  cmp     x0, #4 //EL==1
     beq     5f
 
-    msr     sp_el1, x1
     // enable CNTP for EL1
     mrs     x0, cnthctl_el2
     orr     x0, x0, #3
@@ -69,36 +62,287 @@ _core_0:
     ldr x0, =vector
     msr vbar_el1, x0 
 
+_setup_core0_stack:
+    //Need to use Virtual addresses
+    ldr     x1, =__cpu0_stack
+    msr     sp_el1, x1
+    mov     sp, x1
+
   // change execution level to EL1
     mov     x2, #0x3c4
     msr     spsr_el2, x2
     adr     x2, 5f
     msr     elr_el2, x2
     eret   
+5: 
 
-
-5:  mov     sp, x1
     msr     SPSel, #1
+    
+    bl map_identity
+    bl map_high
+
+_load_ttbr:
+    ldr x0, =id_pg_dir
+    msr ttbr0_el1, x0
+    ldr x0, =high_pg_dir
+    msr ttbr1_el1, x0
+    // In case it does return, halt the master core too
+
+    /* setup TCR_EL1 */
+    ldr x0, =TCR_EL1_VAL
+    msr TCR_EL1, x0
+
+    /* setup MAIR_EL1 */
+    ldr x0, =MAIR_EL1_VAL
+    msr MAIR_EL1, x0
+    
+_start_mmu:
+    //Init MMU Here with &kernel_main = virt addr of kernel
+    mov    x0, #SCTLR_MMU_ENABLED
+    msr    sctlr_el1, x0
+    isb
+
+    /* ldr     x1, =__cpu0_stack
+    mov     sp, x1 */
 
     // Clean the BSS section
-     ldr     x1, =__bss_start     // Start address
+    ldr     x1, =__bss_start     // Start address
     ldr     w2, =__bss_size      // Size of the section
 3:  cbz     w2, 4f               // Quit loop if zero
     str     xzr, [x1], #8
     sub     w2, w2, #1
-    cbnz    w2, 3b               // Loop if non-zero 
-_launch_kernel:
-    // Jump to our main() routine in C (make sure it doesn't return)
-    
-    ldr    x2, =kernel_mmu_init
-    //Init MMU Here with &kernel_main = virt addr of kernel
-4:  br      x2
-    // In case it does return, halt the master core too
-    b       1f
+    cbnz    w2, 3b               // Loop if non-zero  
 
+_launch_kernel:
+     /*  ldr x2, =LINEAR_MAP_BASE
+    add sp, sp, x2
+    //adr x1, kernel_mmu_init
+     add x1, x1, x2  */
+
+    ldr x1, =kernel_main
+   
+4:  blr x1
+    wfe
+    b       4b
+
+
+
+.globl memzero
+memzero:
+    /* store 8 bytes of zero to [x0], then x0 += 8 */
+    str xzr, [x0], #8
+    subs x1, x1, #8
+    /* branch if greater than zero */
+    b.gt memzero
+    ret
+
+
+
+/* changes tmp1, tmp2 only */
+.macro create_table_entry, tbl, ntbl, va, shift, flags, tmp1, tmp2
+    /* get entry index in tmp1 */
+    lsr \tmp1, \va, #\shift
+    and \tmp1, \tmp1, #ENTRIES_PER_TABLE - 1
+    /* tmp2 = entry value */
+    mov \tmp2, \ntbl
+    orr \tmp2, \tmp2, #\flags
+    /* install entry */
+    str \tmp2, [\tbl, \tmp1, lsl #3]
+.endm
+
+/* changes vstart, vend, pa, tmp1 */
+/* vstart and vend should not point to the same block! */
+.macro create_block_map, pmd, vstart, vend, pa, flags, tmp1
+    /* turn vstart, vend into indices */
+    lsr \vstart, \vstart, #SECTION_SHIFT
+    and \vstart, \vstart, #ENTRIES_PER_TABLE - 1
+    lsr \vend, \vend, #SECTION_SHIFT
+    /* minus one to handle the last entry */
+    sub \vend, \vend, #1
+    and \vend, \vend, #ENTRIES_PER_TABLE - 1
+    /* loop init, pa = pa | flags */
+    lsr \pa, \pa, #SECTION_SHIFT
+    lsl \pa, \pa, #SECTION_SHIFT
+    ldr \tmp1, =\flags
+    orr \pa, \pa, \tmp1
+    /* loop */
+    /* pmd[vstart] = pa */
+2:
+    str \pa, [\pmd, \vstart, lsl #3]
+    /* pa += section size */
+    add \pa, \pa, #SECTION_SIZE
+    /* vstart += 1 */
+    add \vstart, \vstart, #1
+    cmp \vstart, \vend
+    b.le 2b
+.endm
+
+
+map_identity:
+    /* save return address */
+    mov x29, x30
+    adrp x0, id_pg_dir
+    mov x1, #ID_MAP_TABLE_SIZE
+    /* clear id page tables */
+    bl memzero
+    adrp x0, id_pg_dir
+    /* x1 = address of id map pud */
+    add x1, x0, #PAGE_SIZE
+    eor x4, x4, x4
+    /* install PGD entry */
+    
+    /* changes tmp1, tmp2 only */
+    //.macro create_table_entry, tbl, ntbl, va, shift, flags, tmp1, tmp2
+/*
+tbl - a pointer to a memory region were new table has to be allocated.
+virt - virtual address that we are currently mapping.
+shift - shift that we need to apply to the virtual address in order to extract current table index. (39 in case of PGD and 30 in case of PUD)
+tmp1, tmp2 - temporary registers.
+ */
+    create_table_entry x0, x1, x4, PGD_SHIFT, TD_KERNEL_TABLE_FLAGS, x2, x3
+    /* goto next level */
+    add x0, x0, #PAGE_SIZE
+    add x1, x1, #PAGE_SIZE
+    /* install PUD entry */
+    create_table_entry x0, x1, x4, PUD_SHIFT, TD_KERNEL_TABLE_FLAGS, x2, x3
+    /* id map 0-16M */
+    mov x0, x1
+    eor x2, x2, x2
+    ldr x3, =ID_MAP_SIZE
+    eor x4, x4, x4
+    create_block_map x0, x2, x3, x4, TD_KERNEL_BLOCK_FLAGS, x5
+    
+    /* restore return address */
+    mov x30, x29
+    ret
+
+
+map_high:
+    /* save return address */
+    mov x29, x30
+    adrp x0, high_pg_dir
+    mov x1, #HIGH_MAP_TABLE_SIZE
+    /* clear high page tables */
+    bl memzero
+    adrp x0, high_pg_dir
+    /* x1 = address of high map pud */
+    add x1, x0, #PAGE_SIZE
+    /* x4 = address of va we map (pgd) */
+    ldr x4, =LINEAR_MAP_BASE
+    /* install PGD entry */
+    create_table_entry x0, x1, x4, PGD_SHIFT, TD_KERNEL_TABLE_FLAGS, x2, x3
+    /* goto next level */
+    add x0, x0, #PAGE_SIZE
+    add x1, x1, #PAGE_SIZE
+    /* x4 = address of va we map (pud) */
+    ldr x4, =LINEAR_MAP_BASE
+    ldr x5, =PUD_ENTRY_MAP_SIZE
+    /* install first PUD entry */
+    create_table_entry x0, x1, x4, PUD_SHIFT, TD_KERNEL_TABLE_FLAGS, x2, x3
+    add x1, x1, #PAGE_SIZE
+    add x4, x4, x5
+    create_table_entry x0, x1, x4, PUD_SHIFT, TD_KERNEL_TABLE_FLAGS, x2, x3
+    add x1, x1, #PAGE_SIZE
+    add x4, x4, x5
+    create_table_entry x0, x1, x4, PUD_SHIFT, TD_KERNEL_TABLE_FLAGS, x2, x3
+    add x1, x1, #PAGE_SIZE
+    add x4, x4, x5
+    create_table_entry x0, x1, x4, PUD_SHIFT, TD_KERNEL_TABLE_FLAGS, x2, x3
+    /* load some values */
+    ldr x10, =HIGH_MAP_FIRST_START
+    ldr x11, =HIGH_MAP_FIRST_END
+    ldr x12, =HIGH_MAP_SECOND_START
+    ldr x13, =HIGH_MAP_SECOND_END
+    ldr x14, =HIGH_MAP_THIRD_START
+    ldr x15, =HIGH_MAP_THIRD_END
+    ldr x16, =HIGH_MAP_FOURTH_START
+    ldr x17, =HIGH_MAP_FOURTH_END
+    ldr x18, =HIGH_MAP_DEVICE_START
+    ldr x19, =HIGH_MAP_DEVICE_END
+    ldr x20, =FIRST_START
+    ldr x21, =SECOND_START
+    ldr x22, =THIRD_START
+    ldr x23, =FOURTH_START
+    ldr x24, =DEVICE_START
+    /* map first high part */
+    add x0, x0, #PAGE_SIZE
+    mov x2, x10
+    mov x3, x11
+    mov x4, x20
+    create_block_map x0, x2, x3, x4, TD_KERNEL_BLOCK_FLAGS, x5
+    /* map second high part */
+    add x0, x0, #PAGE_SIZE
+    mov x2, x12
+    mov x3, x13
+    mov x4, x21
+    create_block_map x0, x2, x3, x4, TD_KERNEL_BLOCK_FLAGS, x5
+    /* map third high part */
+    add x0, x0, #PAGE_SIZE
+    mov x2, x14
+    mov x3, x15
+    mov x4, x22
+    create_block_map x0, x2, x3, x4, TD_KERNEL_BLOCK_FLAGS, x5
+    /* map fourth high part */
+    add x0, x0, #PAGE_SIZE
+    mov x2, x16
+    mov x3, x17
+    mov x4, x23
+    create_block_map x0, x2, x3, x4, TD_KERNEL_BLOCK_FLAGS, x5
+    /* map device */
+    mov x2, x18
+    mov x3, x19
+    mov x4, x24
+    create_block_map x0, x2, x3, x4, TD_DEVICE_BLOCK_FLAGS, x5
+    
+    /* restore return address */
+    mov x30, x29
+    ret
+
+
+/*
+ * Memory region attributes:
+ *
+ *   n = AttrIndx[2:0]
+ *            n    MAIR
+ *   DEVICE_nGnRnE    000    00000000
+ *   NORMAL_NC        001    01000100
+ */
+#define MT_DEVICE_nGnRnE            0x0
+#define MT_NORMAL_NC                0x1
+#define MT_DEVICE_nGnRnE_FLAGS      0x00
+#define MT_NORMAL_NC_FLAGS          0x44
+#define MAIR_VALUE            (MT_DEVICE_nGnRnE_FLAGS << (8 * MT_DEVICE_nGnRnE)) | (MT_NORMAL_NC_FLAGS << (8 * MT_NORMAL_NC))
+
+
+#define TCR_T0SZ			(64 - 48) 
+#define TCR_T1SZ			((64 - 48) << 16)
+#define TCR_TG0_4K			(0 << 14)
+#define TCR_TG1_4K			(2 << 30)
+#define TCR_VALUE			(TCR_T0SZ | TCR_T1SZ | TCR_TG0_4K | TCR_TG1_4K)
+
+#define SCTLR_MMU_DISABLED              (0 << 0)
+#define SCTLR_MMU_ENABLED               (1 << 0)
+
+.globl setup_page_directory      
+.type setup_page_directory, @function
+setup_page_directory:
+    ldr    x0, =page_global_dir
+    msr    ttbr1_el1, x0
+
+    ldr    x0, =page_global_dir
+    msr    ttbr0_el1, x0
+    
+    ldr    x0, =(TCR_VALUE)
+    msr    tcr_el1, x0
+
+    ldr    x0, =(MAIR_VALUE)
+    msr    mair_el1, x0
+    
+   /*  mov    x0, #SCTLR_MMU_ENABLED
+    msr    sctlr_el1, x0 */
+    ret
 
 .section ".text"
-
 hang:
     stp   x0,  x1,  [sp, #-16]!
     stp   x2,  x3,  [sp, #-16]!

@@ -1,10 +1,10 @@
 #include "Mem.h"
 
 #include "Console.h"
+#include "SMP.h"
 #include "mem/KernelHeapAllocator.h"
 
-
-using  ltl::console::Console;
+using ltl::console::Console;
 
 MemoryAllocator *GlobalKernelAlloc::kalloc = nullptr;
 
@@ -26,11 +26,25 @@ unsigned long GlobalKernelAlloc::freeSpace() {
   return getAllocator()->freeSpace();
 }
 
-void MMIO::write(long reg, unsigned int val) {
-  *(volatile unsigned int *)reg = val;
-}
+void MMIO::write(long reg, unsigned int val) { 
+  *(unsigned int *)reg = val; 
+  // S1E0R: S1 means stage 1, E0 means EL0 and R means read.
+  asm volatile("AT S1E1W, %[_addr_]" ::[_addr_] "r"(reg));
+  unsigned long phys_addr = 0;
+  // Register PAR_EL1 stores the translation result.
+  asm volatile("MRS %0, PAR_EL1" : "=r"(phys_addr));
+  }
 
-unsigned int MMIO::read(long reg) { return *(volatile unsigned int *)reg; }
+unsigned int MMIO::read(unsigned long reg) {
+  unsigned int out = *(unsigned int *)reg;
+
+  // S1E0R: S1 means stage 1, E0 means EL0 and R means read.
+  asm volatile("AT S1E1R, %[_addr_]" ::[_addr_] "r"(reg));
+  unsigned long phys_addr = 0;
+  // Register PAR_EL1 stores the translation result.
+  asm volatile("MRS %0, PAR_EL1" : "=r"(phys_addr));
+  return out;
+}
 
 void *operator new(size_t size) {
   Console::print("New called Size: %d\n", size);

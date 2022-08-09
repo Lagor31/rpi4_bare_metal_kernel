@@ -2,10 +2,10 @@
 #define SMP_H
 
 void store64(unsigned long address, unsigned long value);
-void store64(unsigned long address, unsigned long long value);
+unsigned long load64(unsigned long address);
 
-unsigned long load64(unsigned long address);
-unsigned long load64(unsigned long address);
+void store32(unsigned long address, unsigned int value);
+unsigned int load32(unsigned long address);
 
 extern "C" unsigned long spin_cpu0;
 extern "C" unsigned long spin_cpu1;

@@ -22,7 +22,7 @@ GICD_IPRIORITYR0: 00000000 GICD_ITARGETSR0: 01010101 GICD_ICFGR0:     aaaaaaaa
 GICD_PPISR:       00000000 GICD_SPISR0:     00000000 GICD_SPENSGIR0:  00000000
   */
 
-  uint32_t reg = GICD_DIST_BASE + 8;
+  uint64_t reg = GICD_DIST_BASE + 8;
 
   Console::print("GICID 0x%x OTHER: 0x%x\n", gic400.gicd->iid, MMIO::read(reg));
   Console::print(
@@ -51,26 +51,26 @@ void enable_interrupt(unsigned int irq) {
   // Console::print("Enabling: 0x%x\r\n", irq);
   unsigned int n = irq / 32;
   unsigned int offset = irq % 32;
-  unsigned int enableRegister = GICD_ENABLE_IRQ_BASE + (4 * n);
+  uint64_t enableRegister = GICD_ENABLE_IRQ_BASE + (4 * n);
   // Console::print("EnableRegister: %x\r\n", enableRegister);
   MMIO::write(enableRegister, 1 << offset);
 }
 
 void assign_target(unsigned int irq, unsigned int cpu) {
   unsigned int n = irq / 4;
-  unsigned int targetRegister = GIC_IRQ_TARGET_BASE + (4 * n);
+  uint64_t targetRegister = GIC_IRQ_TARGET_BASE + (4 * n);
   uint32_t byte_offset = irq % 4;
   uint32_t shift = byte_offset * 8 + cpu;
   Console::print("Shift %d\n", shift);
   MMIO::write(targetRegister, MMIO::read(targetRegister) | (1 << shift));
 }
-void send_sgi(unsigned int irq, unsigned int cpu){
+void send_sgi(unsigned int irq, unsigned int cpu) {
   MMIO::write(GICD_SGIR, (1 << (16 + cpu) | irq));
-  //Console::print("SGIR: 0x%x\n", gic400.gicd->sgi);
+  // Console::print("SGIR: 0x%x\n", gic400.gicd->sgi);
 }
 
 void gicInit() {
-  uint64_t interrupt_controller_base = 0xFF840000UL;
+  uint64_t interrupt_controller_base = 0xffff000000000000 + 0xFF840000UL;
   gic400.gicd = (gic400_gicd_t*)(interrupt_controller_base + 0x1000);
   gic400.gicc = (gic400_gicc_t*)(interrupt_controller_base + 0x2000);
 
@@ -85,7 +85,7 @@ void gicInit() {
   MMIO::write(((long)&gic400.gicc->pm), 0x0000FFu);
 
   gic400.gicc->bp = 2;
-  //gic400.gicd->sgi |= (1 << 24);
+  // gic400.gicd->sgi |= (1 << 24);
 
   assign_target(SYSTEM_TIMER_IRQ_1, 0);
   enable_interrupt(SYSTEM_TIMER_IRQ_1);
