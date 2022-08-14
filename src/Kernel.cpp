@@ -8,10 +8,10 @@
 #include "drivers/Uart.h"
 #include "mem/BootAllocator.h"
 #include "mem/KernelHeapAllocator.h"
+#include "mmu/Mmu.h"
 #include "stdlib/Stdlib.h"
 #include "stdlib/String.h"
 #include "stdlib/Vector.h"
-#include "mmu/Mmu.h"
 
 using ltl::console::Console;
 
@@ -54,19 +54,19 @@ extern "C" void kernel_main() {
   /*    void *crash = (void *)0xffffffffffffffff;
     ((char *)crash)[0] = 'd'; */
 
-  /*  spin_msec(200);
+  spin_msec(100);
 
-   start_core3(&init_core);
-   Console::print("Core 3 started\n");
-   spin_msec(200);
+  start_core3(&init_core);
+  //Console::print("Core 3 started\n");
+  spin_msec(100); 
 
-   start_core2(&init_core);
-   Console::print("Core 2 started\n");
+  start_core2(&init_core);
+  //Console::print("Core 2 started\n");
 
-   spin_msec(200);
-   start_core1(&init_core);
-   Console::print("Core 1 started\n"); */
-  
+  spin_msec(100);
+  start_core1(&init_core);
+  //Console::print("Core 1 started\n");
+ 
   /*   while (true) {
       spin_msec(2000);
 

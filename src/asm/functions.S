@@ -1,8 +1,41 @@
-.section .text
+#include "../boot/sysregs.h"
+#include "../mmu/Mmu.h"
+
+.section ".text"
+
+.global spin_lock
+.type spin_lock, @function
+spin_lock:
+/* 	mov	w2, #1
+1:	mov	w1, wzr
+2:	
+    casa	w1, w2, [x0]
+	cbz	w1, 3f
+	ldxr	w1, [x0]
+	cbz	w1, 2b
+	wfe
+	b	1b
+3:
+	ret */
+    mov	w2, #1
+	sevl
+l1:	wfe
+l2:	ldxr	w1, [x0]
+	cbnz	w1, l1
+	stxr	w1, w2, [x0]
+	cbnz	w1, l2
+	ret
+
+
+.global spin_unlock
+.type spin_unlock, @function
+spin_unlock:
+    stlr	wzr, [x0]
+	ret
+
 
 .global _hang_forever  
 .type _hang_forever, @function
-
 _hang_forever:
 1:  wfe
 	b 1b
@@ -20,6 +53,26 @@ get_el:
     and x0, x0, #12
     lsr x0, x0, #2
     ret
+
+
+.globl get_esr_el1
+.type get_esr_el1, @function
+get_esr_el1:
+    mrs x0, ESR_EL1
+    ret 
+
+.globl get_elr_el1
+.type get_elr_el1, @function
+get_elr_el1:
+    mrs x0, ELR_EL1
+    ret 
+
+
+.globl get_far_el1
+.type get_far_el1, @function
+get_far_el1:
+    mrs x0, FAR_EL1
+    ret 
 
 .globl disable_irq
 .type disable_irq, @function
@@ -42,6 +95,8 @@ get_core:
     and x0, x0, #0xFF
     ret
 
+
+.section ".boot"
 .extern __stack_start   
 .extern c_init_core 
 .globl init_core
@@ -87,8 +142,7 @@ init_core:
     add     x3, x2, x1           // Add to the address
     mov     sp, x3
     msr     sp_el1, x3
-
-  // change execution level to EL1
+    // change execution level to EL1
     mov     x2, #0x3c4
     msr     spsr_el2, x2
     adr     x2, 5f
@@ -96,6 +150,24 @@ init_core:
     eret   
 5:
     msr     SPSel, #1
+
+    ldr x0, =id_pg_dir
+    msr ttbr0_el1, x0
+    ldr x0, =high_pg_dir
+    msr ttbr1_el1, x0
+
+    ldr x0, =TCR_EL1_VAL
+    msr TCR_EL1, x0
+
+    ldr x0, =MAIR_EL1_VAL
+    msr MAIR_EL1, x0
+    
+    //Init MMU Here with &kernel_main = virt addr of kernel
+
+    mov    x0, #SCTLR_MMU_ENABLED
+    msr    sctlr_el1, x0
+    isb
+
     mov     x0, #0
     mov     x1, #0
     mov     x2, #0

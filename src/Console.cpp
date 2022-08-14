@@ -4,15 +4,44 @@
 
 #include "stdlib/Stdlib.h"
 
+using ltl::console::Console;
 
-using  ltl::console::Console;
 
+/* A simple spinlock. Safe in any context */
+ struct splck {
+  volatile unsigned int val;
+};
+
+#define SPLCK_UNLOCKED (0)
+#define SPLCK_LOCKED (1)
+
+#define SPLCK_INITIALIZER \
+  { .val = SPLCK_UNLOCKED }
+
+typedef struct splck splck_t;
+
+void splck_init(splck_t *lck) { lck->val = SPLCK_UNLOCKED; }
+
+void splck_lck(splck_t *lck) {
+  while (__atomic_exchange_n(&lck->val, SPLCK_LOCKED, __ATOMIC_ACQ_REL) ==
+         SPLCK_LOCKED)
+    ;
+}
+
+void splck_done(splck_t *lck) {
+  __atomic_store_n(&lck->val, SPLCK_UNLOCKED, __ATOMIC_RELEASE);
+}
+
+extern "C" void spin_lock(unsigned int *lock);
+extern "C" void spin_unlock(unsigned int *lock);
+
+static splck_t lock;
 
 Console *Console::kernel_console = nullptr;
 
 void Console::print(const char *format, ...) {
   if (kernel_console == nullptr) return;
-
+  //splck_lck(&lock);
   char **arg = (char **)&format;
   int c;
   char buf[40];
@@ -70,6 +99,10 @@ void Console::print(const char *format, ...) {
     }
   }
   va_end(args);
+  //splck_done(&lock);
 };
 
-void Console::setKernelConsole(Console *in) { kernel_console = in; };
+void Console::setKernelConsole(Console *in) {
+  kernel_console = in;
+  splck_init(&lock);
+};

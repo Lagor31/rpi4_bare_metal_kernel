@@ -93,12 +93,12 @@ void gicInit() {
   assign_target(SYSTEM_TIMER_IRQ_3, 3);
   enable_interrupt(SYSTEM_TIMER_IRQ_3);
 
-  assign_target(1, 0);
-  assign_target(1, 1);
-  assign_target(1, 2);
-  assign_target(1, 3);
+  assign_target(2, 1);
+  assign_target(2, 2);
+  assign_target(2, 3);
+  enable_interrupt(2);
 
-  enable_interrupt(1);
+  enable_interrupt(2);
 
   gic400.gicc->ctl = GIC400_CTL_ENABLE;
   gic400.gicd->ctl = GIC400_CTL_ENABLE;

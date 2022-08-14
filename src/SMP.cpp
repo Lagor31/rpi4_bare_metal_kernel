@@ -17,7 +17,9 @@ extern "C" void c_init_core() {
   _hang_forever();
 
   while (true) {
-    spin_msec(get_core() * 50);
+    asm volatile("wfe");
+
+    spin_msec(get_core() + 50);
 
     /*  if (get_core() == 2 && first == 0) {
        uint64_t *err = (uint64_t *)0xffffffffffffff0;
@@ -27,34 +29,33 @@ extern "C" void c_init_core() {
        first++;
      } */
 
-    Console::print(
+     Console::print(
         "@@@@@@@@@@@@@@@@ Core %d still alive at EL=%d! @@@@@@@@@@@@@@@\n",
         get_core(), get_el());
 
-    asm volatile("wfe");
   }
 }
 
 void start_core1(void (*func)(void)) {
-  store64((unsigned long)0xffff000000000000 + 0xE0, (unsigned long)func);
-  asm volatile("dc civac, %0" : : "r"(0xE0) : "memory");
+  store64((unsigned long)0xffff0000000000E0, (unsigned long)func);
+  asm volatile("dc civac, %0" : : "r"(0xffff0000000000E0) : "memory");
   asm volatile("sev");
 }
 
 void start_core2(void (*func)(void)) {
-  store64((unsigned long)0xffff000000000000 + 0xE8, (unsigned long)func);
-  asm volatile("dc civac, %0" : : "r"(0xE8) : "memory");
+  store64((unsigned long)0xffff0000000000E8, (unsigned long)func);
+  asm volatile("dc civac, %0" : : "r"(0xffff0000000000E8) : "memory");
   asm volatile("sev");
 }
 
 void start_core3(void (*func)(void)) {
-  store64((unsigned long)0xffff000000000000 + 0xF0, (unsigned long)func);
-  asm volatile("dc civac, %0" : : "r"(0xF0) : "memory");
+  store64((unsigned long)0xffff0000000000F0, (unsigned long)func);
+  asm volatile("dc civac, %0" : : "r"(0xffff0000000000F0) : "memory");
   asm volatile("sev");
 }
 
 void store64(unsigned long address, unsigned long value) {
-  *(unsigned long *)address = value;
+  *(unsigned long *)address = (unsigned long) value;
 }
 
 unsigned long load64(unsigned long address) {

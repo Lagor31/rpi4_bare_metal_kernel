@@ -6,17 +6,13 @@ SECTIONS
         *(.boot_data*)
     }
 
-    
-     . = 0xFFFF000000000000 + 0x90000;
- 
-     /* AT(0x80000 + SIZEOF(.boot) + SIZEOF( .boot_data.id_pg_dir) + SIZEOF( .boot_data.high_pg_dir)) */  
+    . = 0xFFFF000000000000 + 0x90000;
     .text :  AT(0x90000)  { 
          KEEP(*(.text)) 
         *(.text .text.* .gnu.linkonce.t*) 
     } 
 
     . = ALIGN(0x1000);
-
     .rodata :  ALIGN(0x1000){ 
         *(.rodata .rodata.* .gnu.linkonce.r*) 
     }
@@ -49,7 +45,6 @@ SECTIONS
     }
 
     . = _boot_alloc_end;
-
     . = ALIGN(0x1000);
 
     __stack_start  = .;
@@ -78,9 +73,8 @@ SECTIONS
         . = . + 512;
         __cpu3_stack  = .;
     }
-        . = ALIGN(0x1000);
-
-
+    
+    . = ALIGN(0x1000);
     .heap (NOLOAD) : {
         . = ALIGN(16);
         _heap_start = .;

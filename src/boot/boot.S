@@ -304,49 +304,6 @@ map_high:
     ret
 
 
-/*
- * Memory region attributes:
- *
- *   n = AttrIndx[2:0]
- *            n    MAIR
- *   DEVICE_nGnRnE    000    00000000
- *   NORMAL_NC        001    01000100
- */
-#define MT_DEVICE_nGnRnE            0x0
-#define MT_NORMAL_NC                0x1
-#define MT_DEVICE_nGnRnE_FLAGS      0x00
-#define MT_NORMAL_NC_FLAGS          0x44
-#define MAIR_VALUE            (MT_DEVICE_nGnRnE_FLAGS << (8 * MT_DEVICE_nGnRnE)) | (MT_NORMAL_NC_FLAGS << (8 * MT_NORMAL_NC))
-
-
-#define TCR_T0SZ			(64 - 48) 
-#define TCR_T1SZ			((64 - 48) << 16)
-#define TCR_TG0_4K			(0 << 14)
-#define TCR_TG1_4K			(2 << 30)
-#define TCR_VALUE			(TCR_T0SZ | TCR_T1SZ | TCR_TG0_4K | TCR_TG1_4K)
-
-#define SCTLR_MMU_DISABLED              (0 << 0)
-#define SCTLR_MMU_ENABLED               (1 << 0)
-
-.globl setup_page_directory      
-.type setup_page_directory, @function
-setup_page_directory:
-    ldr    x0, =page_global_dir
-    msr    ttbr1_el1, x0
-
-    ldr    x0, =page_global_dir
-    msr    ttbr0_el1, x0
-    
-    ldr    x0, =(TCR_VALUE)
-    msr    tcr_el1, x0
-
-    ldr    x0, =(MAIR_VALUE)
-    msr    mair_el1, x0
-    
-   /*  mov    x0, #SCTLR_MMU_ENABLED
-    msr    sctlr_el1, x0 */
-    ret
-
 .section ".text"
 hang:
     stp   x0,  x1,  [sp, #-16]!
