@@ -97,7 +97,7 @@ _load_ttbr:
     
 _start_mmu:
     //Init MMU Here with &kernel_main = virt addr of kernel
-    mov    x0, #SCTLR_MMU_ENABLED
+    mov    x0, #5 //ENABLE MMU, CACHE ENABLE
     msr    sctlr_el1, x0
     isb
 

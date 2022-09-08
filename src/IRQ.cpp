@@ -5,6 +5,7 @@
 
 #include "Console.h"
 #include "GIC.h"
+#include "Lock.h"
 #include "Mem.h"
 #include "SystemTimer.h"
 #include "boot/sysregs.h"
@@ -65,99 +66,111 @@ extern "C" void serror_handler_sp0() {
   Console::print("Current Level with SP0\n");
   _hang_forever();
 }
+
+static splck_t sched_lock;
+
 void timerInit() {
   disable_irq();
+  splck_init(&sched_lock);
   gicInit();
   RPI_WaitMicroSecondsT1(1000000);
-  // RPI_WaitMicroSecondsT3(9500000);
+  RPI_WaitMicroSecondsT3(1000000);
   Console::print("Timer init on core: %d\n", get_core());
   enable_irq();
 }
 uint64_t core_activations[4] = {0};
 
-uint64_t c = 0;
 // Current EL with SPx
 extern "C" void irq_handler_spx() {
   disable_irq();
 
   // Console::print("CORE: %d EL: %d ", get_core(), get_el());
-  unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
-  // Console::print("IRQ ACK REQ 0x%x\n", irq_ack_reg);
-  unsigned int irq = irq_ack_reg & 0x3FF;
-  unsigned int cpu = (irq_ack_reg >> 10) & 7;
+
   /*  Console::print(
        "\nReceived IRQ Exception\n\tCore: %d IRQ: %d From: Core%d ID: %d\n",
        get_core(), irq, cpu, c++); */
   // Console::print("Current Level with SPX\n");
+  splck_lck(&sched_lock);
+  unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
+  // Console::print("IRQ ACK REQ 0x%x\n", irq_ack_reg);
+  unsigned int irq = irq_ack_reg & 0x3FF;
+  unsigned int cpu = (irq_ack_reg >> 10) & 7;
   rpi_sys_timer_t *sys_timer = RPI_GetSystemTimer();
+  splck_done(&sched_lock);
+
   //   print_gic_state();
   switch (irq) {
     case (SYSTEM_TIMER_IRQ_1):
-      Console::print("\n\tTimer IRQ 1 Received! Waking up other cores!\n");
-      /*        Console::print(
-                "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO:
-         " "0x%x\n\n", sys_timer->control_status, sys_timer->compare0,
-         sys_timer->compare1, sys_timer->compare2, sys_timer->compare3,
-         sys_timer->counter_lo);
-       */      // print_gic_state();
-      /*       Console::print("Timer IRQ 1\n\t");
-            Console::print(
-                "CS: 0x%x CMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\n\tCNTRLO:
-         " "0x%x\n", sys_timer->control_status, sys_timer->compare0,
-         sys_timer->compare1, sys_timer->compare2, sys_timer->compare3,
-         sys_timer->counter_lo); Console::print("C0: %u C1:%u C2:%u C3:%u\n",
-         core_activations[0], core_activations[1], core_activations[2],
-                           core_activations[3]); */
-      // Console::print("CS: 0x%x", sys_timer->control_status);
 
-      if ((sys_timer->compare0 % 3) == 0)
-        send_sgi(2, 3);
-      else if ((sys_timer->compare2 % 2) == 0)
+      Console::print(
+          "\nTimer IRQ 1\n\tCore%d IRQ: %d From: Core%d\n"
+          "\tC0: %u C1:%u C2:%u C3:%u\n",
+          get_core(), irq, cpu, core_activations[0], core_activations[1],
+          core_activations[2], core_activations[3]);
+
+      splck_lck(&sched_lock);
+      /*    if ((sys_timer->compare0 % 3) == 0)
+           send_sgi(2, 3);
+         else */
+      // if ((sys_timer->compare2 % 3) == 0) send_sgi(2, 1);
+      /* if ((sys_timer->compare2 % 2) == 0)
         send_sgi(2, 2);
       else
-        send_sgi(2, 1);
+        send_sgi(2, 1); */
+      // send_sgi(2, 2);
 
+      RPI_WaitMicroSecondsT1(20000);
       RPI_GetSystemTimer()->control_status |= 0b0010;
-      RPI_WaitMicroSecondsT1(1000000);
       MMIO::write(GICC_EOIR, irq);
+      splck_done(&sched_lock);
       break;
 
     case (SYSTEM_TIMER_IRQ_3):
-      Console::print("\nTimer IRQ 3 Received!\n");
-      /*  Console::print(
-           "CS: 0x%x\nCMP0: 0x%x CMP1: 0x%x CMP2: 0x%x CMP3: 0x%x\nCNTRLO: "
-           "0x%x\n\n",
-           sys_timer->control_status, sys_timer->compare0, sys_timer->compare1,
-           sys_timer->compare2, sys_timer->compare3, sys_timer->counter_lo);
-       // print_gic_state(); */
-      /*     Console::print("C0: %u C1:%u C2:%u C3:%u\n", core_activations[0],
-                         core_activations[1], core_activations[2],
-                         core_activations[3]); */
+      Console::print(
+          "\nTimer IRQ 3\n\tCore%d IRQ: %d From: Core%d\n"
+          "\tC0: %u C1:%u C2:%u C3:%u\n",
+          get_core(), irq, cpu, core_activations[0], core_activations[1],
+          core_activations[2], core_activations[3]);
 
-      MMIO::write(GICC_EOIR, irq);
+      splck_lck(&sched_lock);
+      if ((sys_timer->compare2 % 2) == 0)
+        send_sgi(2, 2);
+     /*  else
+        send_sgi(2, 1); */
+
       RPI_GetSystemTimer()->control_status |= 0b1000;
-      RPI_WaitMicroSecondsT3(9500000);
+      RPI_WaitMicroSecondsT3(50000);
+      MMIO::write(GICC_EOIR, irq);
+      splck_done(&sched_lock);
+
       break;
     case 1023:
       Console::print("SPOURIOUS INT RECEIVED: %x\r\n", irq);
+      splck_lck(&sched_lock);
       MMIO::write(GICC_EOIR, irq);
+      splck_done(&sched_lock);
       break;
     default:
       /* spin_msec(get_core() * 5 + 50);
       Console::print("Unknown pending irq: %x from core: %d\r\n", irq, cpu); */
 
-      Console::print("Received IRQ Exception\n\tCore%d IRQ: %d From: Core%d\n",
-                     get_core(), irq, cpu);
-
-      Console::print("\tC0: %u C1:%u C2:%u C3:%u\n", core_activations[0],
-                     core_activations[1], core_activations[2],
-                     core_activations[3]);
-
+      /*  Console::print(
+          "Received IRQ Exception\n\tCore%d IRQ: %d From: Core%d\n"
+          "\tC0: %u C1:%u C2:%u C3:%u\n",
+          get_core(), irq, cpu, core_activations[0], core_activations[1],
+          core_activations[2], core_activations[3]);
+      */
+      splck_lck(&sched_lock);
       MMIO::write(GICC_EOIR, irq);
+      splck_done(&sched_lock);
+
       break;
   }
   // Console::print("\n");
+  splck_lck(&sched_lock);
   core_activations[get_core()]++;
+  splck_done(&sched_lock);
+
   enable_irq();
 }
 
@@ -165,12 +178,11 @@ extern "C" void sync_handler_spx() {
   unsigned long add = get_far_el1();
   unsigned long cause = get_esr_el1();
   unsigned long ret = get_elr_el1();
-  Console::print("Received SYNC Exception on core %d!!!\n", get_core());
-  Console::print("Current Level with SPX\n");
-  Console::print("Fault address: 0x%x\n", add);
-  Console::print("Cause address: 0x%x\n", cause);
-  Console::print("Ret add address: 0x%x\n", ret);
-  
+  Console::print_no_lock("Received SYNC Exception on core %d!!!\n", get_core());
+  Console::print_no_lock("Current Level with SPX\n");
+  Console::print_no_lock("Fault address: 0x%x\n", add);
+  Console::print_no_lock("Cause address: 0x%x\n", cause);
+  Console::print_no_lock("Ret add address: 0x%x\n", ret);
   _hang_forever();
 }
 
@@ -239,10 +251,10 @@ extern "C" void serror_handler_lower_aarch32() {
 extern "C" void panic() {
   disable_irq();
   print_gic_state();
-  Console::print("Panicking on Core %d!\n", get_core());
+  Console::print_no_lock("Panicking on Core %d!\n", get_core());
   unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
   unsigned int irq = irq_ack_reg & 0x2FF;
-  Console::print("IRQ: 0x%d\n", irq);
+  Console::print_no_lock("IRQ: 0x%d\n", irq);
   MMIO::write(GICC_EOIR, irq_ack_reg);
   // enable_irq();
 }

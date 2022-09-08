@@ -8,7 +8,7 @@ ASMFILES = $(wildcard src/asm/*.S)
 OBJ = ${C++FILES:.cpp=.o}
 
 #																						  disable FPU -mgeneral-regs-only
-GCCFLAGS = -O0 -march=armv8.1-a -Wall -ffreestanding -fno-exceptions -fno-leading-underscore -fno-rtti -mgeneral-regs-only  
+GCCFLAGS = -O0 -march=armv8-a -mtune=cortex-a72 -Wall -ffreestanding -fno-exceptions -fno-leading-underscore -fno-rtti -mgeneral-regs-only  
 G++ = aarch64-linux-gnu-g++
 LD = aarch64-linux-gnu-ld
 OBJCOPY = aarch64-linux-gnu-objcopy
