@@ -133,8 +133,8 @@ extern "C" void irq_handler_spx() {
           core_activations[2], core_activations[3]);
 
       splck_lck(&sched_lock);
-      if ((sys_timer->compare2 % 2) == 0)
-        send_sgi(2, 2);
+      /* if ((sys_timer->compare2 % 2) == 0)
+        send_sgi(2, 2); */
      /*  else
         send_sgi(2, 1); */
 
