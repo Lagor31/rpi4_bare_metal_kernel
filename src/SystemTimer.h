@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include "Mem.h"
+#include "Lock.h"
 
 #define RPI_SYSTIMER_BASE (MMIO::PERIPHERAL_BASE + 0x3000UL)
 
@@ -30,5 +31,7 @@ typedef struct {
 extern rpi_sys_timer_t* RPI_GetSystemTimer(void);
 extern void RPI_WaitMicroSecondsT1(uint32_t us);
 extern void RPI_WaitMicroSecondsT3(uint32_t us);
+
+static splck_t timer_lock;
 
 #endif

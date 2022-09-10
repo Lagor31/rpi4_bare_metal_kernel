@@ -4,6 +4,7 @@
 
 #include "Lock.h"
 #include "stdlib/Stdlib.h"
+#include "GIC.h"
 
 using ltl::console::Console;
 
@@ -12,7 +13,7 @@ static splck_t lock;
 Console *Console::kernel_console = nullptr;
 
 void Console::print_no_lock(const char *format, ...) {
-  if (kernel_console == nullptr) return;
+  
   char **arg = (char **)&format;
   int c;
   char buf[40];
@@ -71,9 +72,12 @@ void Console::print_no_lock(const char *format, ...) {
   }
   va_end(args);
 }
+
+
 void Console::print(const char *format, ...) {
   if (kernel_console == nullptr) return;
   splck_lck(&lock);
+
   char **arg = (char **)&format;
   int c;
   char buf[40];

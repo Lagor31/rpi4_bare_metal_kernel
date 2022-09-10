@@ -1,5 +1,5 @@
 #include "Lock.h"
-
+#include "GIC.h"
 #include "Console.h"
 
 using ltl::console::Console;
@@ -9,8 +9,9 @@ void splck_init(splck_t *lck) { lck->val = SPLCK_UNLOCKED; }
 void splck_lck(splck_t *lck) {
   while (__atomic_exchange_n(&lck->val, SPLCK_LOCKED, __ATOMIC_ACQUIRE) ==
          SPLCK_LOCKED) {
-    //Console::print_no_lock("Locked :(\n");
+    //Console::print_no_lock("Locked on core%d :(\n", get_core());
   }
+  //Console::print_no_lock("Freed!\n");
 }
 
 void splck_done(splck_t *lck) {

@@ -12,9 +12,18 @@
 
 #include <stdint.h>
 
+#include "Lock.h"
+
+extern splck_t timer_lock;
 static rpi_sys_timer_t* rpiSystemTimer = (rpi_sys_timer_t*)RPI_SYSTIMER_BASE;
 
-rpi_sys_timer_t* RPI_GetSystemTimer(void) { return rpiSystemTimer; }
+rpi_sys_timer_t* RPI_GetSystemTimer(void) {
+  rpi_sys_timer_t* out = nullptr;
+  splck_lck(&timer_lock);
+  out = rpiSystemTimer;
+  splck_done(&timer_lock);
+  return out;
+}
 
 void RPI_WaitMicroSecondsT1(uint32_t us) {
   rpiSystemTimer->compare1 = rpiSystemTimer->counter_lo + us;

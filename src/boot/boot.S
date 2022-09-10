@@ -389,6 +389,7 @@ irq_spx:
     ldp   x2,  x3,  [sp], #16
     ldp   x0,  x1,  [sp], #16
     eret
+    
 irq_aarch64:
     stp   x0,  x1,  [sp, #-16]!
     stp   x2,  x3,  [sp, #-16]!
