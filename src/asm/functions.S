@@ -6,31 +6,24 @@
 .global spin_lock
 .type spin_lock, @function
 spin_lock:
-/* 	mov	w2, #1
-1:	mov	w1, wzr
-2:	
-    casa	w1, w2, [x0]
-	cbz	w1, 3f
-	ldxr	w1, [x0]
-	cbz	w1, 2b
-	wfe
-	b	1b
-3:
-	ret */
+
     mov	w2, #1
 	sevl
 l1:	wfe
-l2:	ldxr	w1, [x0]
+l2:	ldaxr	w1, [x0]
 	cbnz	w1, l1
 	stxr	w1, w2, [x0]
-	cbnz	w1, l2
-	ret
+    dsb SY
 
+    cbnz	w1, l2
+
+	ret
 
 .global spin_unlock
 .type spin_unlock, @function
 spin_unlock:
     stlr	wzr, [x0]
+    dsb SY
 	ret
 
 
@@ -137,8 +130,8 @@ init_core:
     mrs     x1, mpidr_el1
     and     x1, x1, #3
 
-    ldr     x2, =__stack_start    // Get ourselves a fresh stack - location depends on CPU core asking
-    lsl     x1, x1, #9           // Multiply core_number by 512
+    ldr     x2, =__cpu0_stack    // Get ourselves a fresh stack - location depends on CPU core asking
+    lsl     x1, x1, #12           // Multiply core_number by 4096
     add     x3, x2, x1           // Add to the address
     mov     sp, x3
     msr     sp_el1, x3
