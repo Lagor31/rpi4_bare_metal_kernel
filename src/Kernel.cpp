@@ -1,6 +1,7 @@
 #include "Console.h"
 #include "GIC.h"
 #include "IRQ.h"
+#include "Lock.h"
 #include "Mem.h"
 #include "SMP.h"
 #include "SystemTimer.h"
@@ -12,7 +13,6 @@
 #include "stdlib/Stdlib.h"
 #include "stdlib/String.h"
 #include "stdlib/Vector.h"
-
 using ltl::console::Console;
 
 extern void *_boot_alloc_start;
@@ -38,39 +38,26 @@ extern "C" void kernel_main() {
   Console::print("Current EL: %u\n", Std::getCurrentEL());
   DriverManager::load(gpio);
   DriverManager::load(uart);
-  Console::print("BootAlloc Start: 0x%x BootAlloc end: 0x%x\n",
-                 &_boot_alloc_start, &_boot_alloc_end);
-  Console::print("Heap Start: 0x%x Heap end: 0x%x\n",
-                 (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
+  /*   Console::print("BootAlloc Start: 0x%x BootAlloc end: 0x%x\n",
+                   &_boot_alloc_start, &_boot_alloc_end);
+    Console::print("Heap Start: 0x%x Heap end: 0x%x\n",
+                   (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
+  */
 
   KernelHeapAllocator *kha = new KernelHeapAllocator(
       (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
   GlobalKernelAlloc::setAllocator(kha);
 
-  Console::print("\n\ns uint_32t: %d \ns uint64_t: %d\ns ushort: %d\n",
-                 sizeof(uint32_t), sizeof(uint64_t), sizeof(unsigned short));
+  init_sched();
+  
+  start_core3(&init_core);
+  spin_msec(10);
+  start_core2(&init_core);
+  spin_msec(10);
+  start_core1(&init_core);
+  spin_msec(50);
 
   timerInit();
-  /*    void *crash = (void *)0xffffffffffffffff;
-    ((char *)crash)[0] = 'd'; */
 
-  spin_msec(100);
-
-  start_core3(&init_core);
-  //Console::print("Core 3 started\n");
-  spin_msec(100); 
-
-  start_core2(&init_core);
-  //Console::print("Core 2 started\n");
-
-  spin_msec(100);
-  start_core1(&init_core);
-  //Console::print("Core 1 started\n");
- 
-  /*   while (true) {
-      spin_msec(2000);
-
-    }
-   */
   _hang_forever();
 }

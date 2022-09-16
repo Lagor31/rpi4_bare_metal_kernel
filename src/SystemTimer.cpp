@@ -19,9 +19,9 @@ static rpi_sys_timer_t* rpiSystemTimer = (rpi_sys_timer_t*)RPI_SYSTIMER_BASE;
 
 rpi_sys_timer_t* RPI_GetSystemTimer(void) {
   rpi_sys_timer_t* out = nullptr;
-  splck_lck(&timer_lock);
+  //splck_lck(&timer_lock);
   out = rpiSystemTimer;
-  splck_done(&timer_lock);
+  //splck_done(&timer_lock);
   return out;
 }
 

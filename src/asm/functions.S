@@ -33,6 +33,12 @@ _hang_forever:
 1:  wfe
 	b 1b
 
+.global _wait_for_interrupt  
+.type _wait_for_interrupt, @function
+_wait_for_interrupt:
+1:  wfi
+	b 1b
+
 .globl enable_irq      
 .type enable_irq, @function
 enable_irq:

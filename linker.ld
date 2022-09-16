@@ -48,7 +48,7 @@ SECTIONS
     . = ALIGN(0x1000);
 
     __stack_start  = .;
-    . = . + 512;
+    . = . + 4096;
 
     /* Grows Downwards! */
     . = ALIGN(16);
@@ -58,19 +58,19 @@ SECTIONS
 
     . = ALIGN(16);
     .cpu1Stack (NOLOAD) :    {
-        . = . + 512;
+        . = . + 4096;
         __cpu1_stack  = .;
     }
 
     . = ALIGN(16);
     .cpu2Stack (NOLOAD):    {
-        . = . + 512;
+        . = . + 4096;
         __cpu2_stack  = .;
     }
 
     . = ALIGN(16);
     .cpu3Stack (NOLOAD):    {
-        . = . + 512;
+        . = . + 4096;
         __cpu3_stack  = .;
     }
     

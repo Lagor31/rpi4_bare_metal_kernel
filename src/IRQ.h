@@ -1,15 +1,31 @@
 #ifndef IRQ_H
 #define IRQ_H
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include "Lock.h"
 #include "Mem.h"
 
 extern "C" void enable_irq();
 extern "C" void disable_irq();
-//void disable_interrupt_controller();
+// void disable_interrupt_controller();
 void handle_irq();
 void timerInit();
 void wait_msec(unsigned int n);
 void timerInit();
+void init_sched();
+// splck_t sched_lock;
+
+struct irq_regs_t {
+  uint64_t gpr[30];
+
+  /// The link register, aka x30.
+  uint64_t lr;
+  uint64_t elr_el1;
+  uint64_t sprs_el1;
+  uint64_t esr_el1;
+} __attribute__((packed));
 
 struct arm_irq_regs_2711 {
   volatile unsigned int irq0_pending_0;

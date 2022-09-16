@@ -56,6 +56,15 @@ void enable_interrupt(unsigned int irq) {
   MMIO::write(enableRegister, 1 << offset);
 }
 
+void dis_interrupt(unsigned int irq) {
+  // Console::print("Enabling: 0x%x\r\n", irq);
+  unsigned int n = irq / 32;
+  unsigned int offset = irq % 32;
+  uint64_t enableRegister = GICD_ENABLE_IRQ_BASE + (4 * n);
+  // Console::print("EnableRegister: %x\r\n", enableRegister);
+  MMIO::write(enableRegister, 0 << offset);
+}
+
 void assign_target(unsigned int irq, unsigned int cpu) {
   unsigned int n = irq / 4;
   uint64_t targetRegister = GIC_IRQ_TARGET_BASE + (4 * n);
@@ -90,14 +99,18 @@ void gicInit() {
   assign_target(SYSTEM_TIMER_IRQ_1, 0);
   enable_interrupt(SYSTEM_TIMER_IRQ_1);
 
-   assign_target(SYSTEM_TIMER_IRQ_3, 3);
+  assign_target(SYSTEM_TIMER_IRQ_3, 3);
   enable_interrupt(SYSTEM_TIMER_IRQ_3);
+  // dis_interrupt(10);
+  /* assign_target(2, 3);
+   */
 
- /*  assign_target(2, 1);
-  assign_target(2, 2);  */
+  assign_target(2, 2);
+  assign_target(2, 1);
+  // enable_interrupt(1);
+  enable_interrupt(2);
   /*assign_target(2, 3); */
-  //enable_interrupt(2);
-
+  // enable_interrupt(2);
   gic400.gicc->ctl = GIC400_CTL_ENABLE;
   gic400.gicd->ctl = GIC400_CTL_ENABLE;
 }

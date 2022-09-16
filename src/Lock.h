@@ -3,7 +3,7 @@
 
 /* A simple spinlock. Safe in any context */
 struct splck {
-  volatile unsigned int val;
+   unsigned int val;
 };
 
 #define SPLCK_UNLOCKED (0)
