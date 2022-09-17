@@ -2,12 +2,12 @@
 #define UART_H
 
 #include "Console.h"
-#include "Mem.h"
 #include "Gpio.h"
+#include "Mem.h"
 
 #define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK / (baud * 8)) - 1)
 
-using  ltl::console::Console;
+using ltl::console::Console;
 class UART : public Driver, public Console {
  public:
   UART(GPIO *);
@@ -16,7 +16,7 @@ class UART : public Driver, public Console {
   const char *getName();
   void unload();
   void write(char);
-  void write(const char*);
+  void write(const char *);
   void flush();
 
   enum {
@@ -42,7 +42,6 @@ class UART : public Driver, public Console {
   static unsigned int uart_output_queue_write;
   static unsigned int uart_output_queue_read;
 
-  void uart_init(GPIO *);
   void loadOutputFifo();
   unsigned char readByte();
   unsigned int isReadByteReady();
@@ -54,6 +53,7 @@ class UART : public Driver, public Console {
   unsigned int isWriteByteReady();
   void writeByteBlockingActual(unsigned char ch);
   void drainOutputQueue();
+  GPIO *gpio;
 };
 
 #endif

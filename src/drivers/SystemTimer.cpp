@@ -14,21 +14,22 @@
 
 #include "../include/Lock.h"
 
-extern splck_t timer_lock;
 static rpi_sys_timer_t* rpiSystemTimer = (rpi_sys_timer_t*)RPI_SYSTIMER_BASE;
 
-rpi_sys_timer_t* RPI_GetSystemTimer(void) {
-  rpi_sys_timer_t* out = nullptr;
-  //splck_lck(&timer_lock);
-  out = rpiSystemTimer;
-  //splck_done(&timer_lock);
-  return out;
+rpi_sys_timer_t* SystemTimer::getTimer(void) {
+  return rpiSystemTimer;
 }
 
-void RPI_WaitMicroSecondsT1(uint32_t us) {
+SystemTimer::SystemTimer() {}
+
+void SystemTimer::WaitMicroT1(uint32_t us) {
   rpiSystemTimer->compare1 = rpiSystemTimer->counter_lo + us;
 }
 
-void RPI_WaitMicroSecondsT3(uint32_t us) {
+void SystemTimer::WaitMicroT3(uint32_t us) {
   rpiSystemTimer->compare3 = rpiSystemTimer->counter_lo + us;
 }
+
+void SystemTimer::init() {}
+const char* SystemTimer::getName() { return "SystemTimer"; }
+void SystemTimer::unload() {}

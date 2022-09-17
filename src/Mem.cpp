@@ -33,23 +33,23 @@ unsigned int MMIO::read(unsigned long reg) {
 }
 
 void *operator new(size_t size) {
-  Console::print("New called Size: %d\n", size);
+  //Console::print("New called Size: %d\n", size);
   return GlobalKernelAlloc::alloc(size);
 }
 void *operator new[](size_t size) {
-  Console::print("New[] called Size: %d\n", size);
+  //Console::print("New[] called Size: %d\n", size);
   return GlobalKernelAlloc::alloc(size);
 }
 void operator delete(void *p) {
-  Console::print("Delete called\n");
+  //Console::print("Delete called\n");
   GlobalKernelAlloc::free(p);
 }
 void operator delete(void *p, unsigned long s) {
-  Console::print("Delete long called Size: %d\n", s);
+  //Console::print("Delete long called Size: %d\n", s);
   GlobalKernelAlloc::free(p);
 }
 void operator delete[](void *p) {
-  Console::print("Delete[] called\n");
+  //Console::print("Delete[] called\n");
   GlobalKernelAlloc::free(p);
 }
 

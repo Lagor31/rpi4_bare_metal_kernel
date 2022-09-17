@@ -1,19 +1,25 @@
 #include "../include/Console.h"
 #include "../include/Driver.h"
 
-using  ltl::console::Console;
+using ltl::console::Console;
 
-Driver* DriverManager::drivers[];
-
-int DriverManager::loaded_drivers;
+Vector<Driver*>* DriverManager::drivers;
 
 void DriverManager::load(Driver* d) {
-  if (loaded_drivers < MAX_DRIVERS) {
-    drivers[loaded_drivers] = d;
-    ++loaded_drivers;
-    Console::print("Loaded driver: %s", d->getName());
+  drivers->push_back(d);
+  Console::print("Loaded driver: %s\n", d->getName());
+}
+void DriverManager::loadAndStart(Driver* d) {
+  load(d);
+  d->init();
+}
+
+void DriverManager::startAll() {
+  for (Driver* d : *drivers) {
+    d->init();
   }
 }
 
-int DriverManager::getDriversCount() { return loaded_drivers; }
-Driver** DriverManager::getAll() { return DriverManager::drivers; }
+int DriverManager::getDriversCount() { return drivers->size(); }
+
+Vector<Driver*>* DriverManager::getAll() { return drivers; }

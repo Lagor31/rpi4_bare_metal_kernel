@@ -17,7 +17,7 @@ extern "C" void c_init_core() {
   //_hang_forever();
   enable_irq();
   // spin_msec(1000);
-  Console::print("@@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
+  Console::print("@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
                  get_core());
   _wait_for_interrupt();
   //_hang_forever();

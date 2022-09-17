@@ -1,6 +1,8 @@
 #ifndef DRIVER_H
 #define DRIVER_H
 
+#include "Vector.h"
+
 class Driver {
  public:
   virtual void init() = 0;
@@ -10,14 +12,15 @@ class Driver {
 
 class DriverManager {
  private:
-  static int loaded_drivers;
-  static const int MAX_DRIVERS = 10;
-  static Driver* drivers[MAX_DRIVERS];
+  static Vector<Driver*>* drivers;
 
  public:
   static void load(Driver* d);
-  static void init() { loaded_drivers = 0; }
-  static Driver** getAll();
+  static void loadAndStart(Driver* d);
+  static void startAll();
+
+  static void init() { drivers = new Vector<Driver*>(); }
+  static Vector<Driver*>* getAll();
   static int getDriversCount();
 };
 

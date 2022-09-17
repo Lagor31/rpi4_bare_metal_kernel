@@ -8,7 +8,7 @@ GPIO::GPIO(){};
 void GPIO::init() {}
 void GPIO::unload(){};
 
-const char* GPIO::getName() { return "GPIO Driver\n"; }
+const char* GPIO::getName() { return "GPIO Driver"; }
 
 unsigned int GPIO::gpio_call(unsigned int pin_number, unsigned int value,
                              unsigned long base, unsigned int field_size,

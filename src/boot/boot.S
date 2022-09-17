@@ -115,8 +115,8 @@ _start_mmu:
 _launch_kernel:
     ldr x1, =kernel_main
    
-4:  blr x1
-    wfe
+    blr x1
+4:  wfi
     b       4b
 
 
@@ -305,7 +305,9 @@ map_high:
 
 
 .section ".text"
-__exception_restore_context:
+
+.macro _kernel_exit
+
 	ldr	w19,      [sp, #16 * 16]
 	ldp	lr,  x20, [sp, #16 * 15]
 
@@ -327,37 +329,45 @@ __exception_restore_context:
 	ldp	x24, x25, [sp, #16 * 12]
 	ldp	x26, x27, [sp, #16 * 13]
 	ldp	x28, x29, [sp, #16 * 14]
-
 	add	sp,  sp,  #16 * 17
-
 	eret
 
+.endm
+
+.macro _kernel_entry
+    sub	sp,  sp,  #16 * 17
+	// Store all general purpose registers on the stack.
+	stp	x0,  x1,  [sp, #16 * 0]
+	stp	x2,  x3,  [sp, #16 * 1]
+	stp	x4,  x5,  [sp, #16 * 2]
+	stp	x6,  x7,  [sp, #16 * 3]
+	stp	x8,  x9,  [sp, #16 * 4]
+	stp	x10, x11, [sp, #16 * 5]
+	stp	x12, x13, [sp, #16 * 6]
+	stp	x14, x15, [sp, #16 * 7]
+	stp	x16, x17, [sp, #16 * 8]
+	stp	x18, x19, [sp, #16 * 9]
+	stp	x20, x21, [sp, #16 * 10]
+	stp	x22, x23, [sp, #16 * 11]
+	stp	x24, x25, [sp, #16 * 12]
+	stp	x26, x27, [sp, #16 * 13]
+	stp	x28, x29, [sp, #16 * 14]
+
+	// Add the exception link register (ELR_EL1), saved program status (SPSR_EL1) and exception
+	// syndrome register (ESR_EL1).
+	mrs	x1,  ELR_EL1
+	mrs	x2,  SPSR_EL1
+	mrs	x3,  ESR_EL1
+	stp	lr,  x1,  [sp, #16 * 15]
+	stp	x2,  x3,  [sp, #16 * 16]
+
+	// x0 is the first argument for the function called through `\handler`.
+	mov	x0,  sp
+.endm
 
 hang:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]! 
-
+   _kernel_entry
     bl panic
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16 
-
  1:    
     wfi
     b     1b 
@@ -367,481 +377,105 @@ hang:
 */
 
 irq_sp0:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
-
+    _kernel_entry
     bl    irq_handler_sp0
+_kernel_exit
 
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
 
 irq_spx:
-    sub	sp,  sp,  #16 * 17
-
-	// Store all general purpose registers on the stack.
-	stp	x0,  x1,  [sp, #16 * 0]
-	stp	x2,  x3,  [sp, #16 * 1]
-	stp	x4,  x5,  [sp, #16 * 2]
-	stp	x6,  x7,  [sp, #16 * 3]
-	stp	x8,  x9,  [sp, #16 * 4]
-	stp	x10, x11, [sp, #16 * 5]
-	stp	x12, x13, [sp, #16 * 6]
-	stp	x14, x15, [sp, #16 * 7]
-	stp	x16, x17, [sp, #16 * 8]
-	stp	x18, x19, [sp, #16 * 9]
-	stp	x20, x21, [sp, #16 * 10]
-	stp	x22, x23, [sp, #16 * 11]
-	stp	x24, x25, [sp, #16 * 12]
-	stp	x26, x27, [sp, #16 * 13]
-	stp	x28, x29, [sp, #16 * 14]
-
-	// Add the exception link register (ELR_EL1), saved program status (SPSR_EL1) and exception
-	// syndrome register (ESR_EL1).
-	mrs	x1,  ELR_EL1
-	mrs	x2,  SPSR_EL1
-	mrs	x3,  ESR_EL1
-
-	stp	lr,  x1,  [sp, #16 * 15]
-	stp	x2,  x3,  [sp, #16 * 16]
-
-	// x0 is the first argument for the function called through `\handler`.
-	mov	x0,  sp
-
-
-/* 
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
-
- */ bl    irq_handler_spx
-
-
-    b __exception_restore_context
-    /* ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret */
-    
+    _kernel_entry
+    bl    irq_handler_spx
+    _kernel_exit
+  
 irq_aarch64:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
-
+  _kernel_entry
     bl    irq_handler_lower_aarch64
+   _kernel_exit
 
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
 irq_aarch32:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
-
+    _kernel_entry
     bl    irq_handler_lower_aarch32
+    _kernel_exit
 
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
 
 /*
     Sync Handlers
 */
+
 sync_sp0:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
-
-    bl     sync_handler_sp0
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
-
+    _kernel_entry
+    bl    sync_handler_sp0
+    _kernel_exit
+  
 
 sync_spx:
-   sub	sp,  sp,  #16 * 17
-
-	// Store all general purpose registers on the stack.
-	stp	x0,  x1,  [sp, #16 * 0]
-	stp	x2,  x3,  [sp, #16 * 1]
-	stp	x4,  x5,  [sp, #16 * 2]
-	stp	x6,  x7,  [sp, #16 * 3]
-	stp	x8,  x9,  [sp, #16 * 4]
-	stp	x10, x11, [sp, #16 * 5]
-	stp	x12, x13, [sp, #16 * 6]
-	stp	x14, x15, [sp, #16 * 7]
-	stp	x16, x17, [sp, #16 * 8]
-	stp	x18, x19, [sp, #16 * 9]
-	stp	x20, x21, [sp, #16 * 10]
-	stp	x22, x23, [sp, #16 * 11]
-	stp	x24, x25, [sp, #16 * 12]
-	stp	x26, x27, [sp, #16 * 13]
-	stp	x28, x29, [sp, #16 * 14]
-
-	// Add the exception link register (ELR_EL1), saved program status (SPSR_EL1) and exception
-	// syndrome register (ESR_EL1).
-	mrs	x1,  ELR_EL1
-	mrs	x2,  SPSR_EL1
-	mrs	x3,  ESR_EL1
-    mov x3, #31
-	stp	lr,  x1,  [sp, #16 * 15]
-	stp	x2,  x3,  [sp, #16 * 16]
-
-	// x0 is the first argument for the function called through `\handler`.
-	mov	x0,  sp
-
-    bl     sync_handler_spx
-    b __exception_restore_context
-
-   
-    eret
+    _kernel_entry
+    bl  sync_handler_spx
+    _kernel_exit
 
 
 sync_aarch64:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
-
+    _kernel_entry
     bl     sync_handler_lower_aarch64
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
-
+    _kernel_exit
 
 
 sync_aarch32:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
-
-    bl     sync_handler_lower_aarch32
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
-
+    _kernel_entry
+    bl  sync_handler_lower_aarch32
+    _kernel_exit
 
 /*
     FIQ Handlers
 */
 fiq_sp0:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
+    _kernel_entry
+    bl  fiq_handler_sp0
+    _kernel_exit
 
-    bl     fiq_handler_sp0
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
 
 fiq_spx:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
+    _kernel_entry
+    bl  fiq_handler_spx
+    _kernel_exit
 
-    bl     fiq_handler_spx
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
 fiq_aarch64:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
 
-    bl     fiq_handler_lower_aarch64
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
+    _kernel_entry
+    bl  fiq_handler_lower_aarch64
+    _kernel_exit
 
 fiq_aarch32:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
+    _kernel_entry
+    bl  fiq_handler_lower_aarch32
+    _kernel_exit
 
-    bl     fiq_handler_lower_aarch32
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
 
 /*
     SError Handlers
 */
 serror_sp0:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
+    _kernel_entry
+    bl  serror_handler_sp0
+    _kernel_exit
 
-    bl     serror_handler_sp0
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
 
 
 serror_spx:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
+    _kernel_entry
+    bl  serror_handler_spx
+    _kernel_exit
 
-    bl     serror_handler_spx
+serror_aarch64:
+    _kernel_entry
+    bl  serror_handler_lower_aarch64
+    _kernel_exit
 
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
-
-    serror_aarch64:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
-
-    bl     serror_handler_lower_aarch64
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
-
-    serror_aarch32:
-    stp   x0,  x1,  [sp, #-16]!
-    stp   x2,  x3,  [sp, #-16]!
-    stp   x4,  x5,  [sp, #-16]!
-    stp   x6,  x7,  [sp, #-16]!
-    stp   x8,  x9,  [sp, #-16]!
-    stp   x10, x11, [sp, #-16]!
-    stp   x12, x13, [sp, #-16]!
-    stp   x14, x15, [sp, #-16]!
-    stp   x16, x17, [sp, #-16]!
-    stp   x18, x19, [sp, #-16]!
-
-    bl     serror_handler_lower_aarch32
-
-    ldp   x18, x19, [sp], #16
-    ldp   x16, x17, [sp], #16
-    ldp   x14, x15, [sp], #16
-    ldp   x12, x13, [sp], #16
-    ldp   x10, x11, [sp], #16
-    ldp   x8,  x9,  [sp], #16
-    ldp   x6,  x7,  [sp], #16
-    ldp   x4,  x5,  [sp], #16
-    ldp   x2,  x3,  [sp], #16
-    ldp   x0,  x1,  [sp], #16
-    eret
-
+serror_aarch32:
+    _kernel_entry
+    bl  serror_handler_lower_aarch32
+    _kernel_exit
+   
 .balign 4096
 .global vector
 vector:

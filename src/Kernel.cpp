@@ -1,17 +1,17 @@
+#include "include/BootAllocator.h"
 #include "include/Console.h"
 #include "include/GIC.h"
+#include "include/Gpio.h"
 #include "include/IRQ.h"
+#include "include/KernelHeapAllocator.h"
 #include "include/Lock.h"
 #include "include/Mem.h"
-#include "include/SMP.h"
-#include "include/SystemTimer.h"
-#include "include/Gpio.h"
-#include "include/Uart.h"
-#include "include/BootAllocator.h"
-#include "include/KernelHeapAllocator.h"
 #include "include/Mmu.h"
+#include "include/SMP.h"
 #include "include/Stdlib.h"
 #include "include/String.h"
+#include "include/SystemTimer.h"
+#include "include/Uart.h"
 #include "include/Vector.h"
 using ltl::console::Console;
 
@@ -33,11 +33,19 @@ extern "C" void kernel_main() {
   DriverManager::init();
   GPIO *gpio = new GPIO();
   UART *uart = new UART(gpio);
-  Console::setKernelConsole(uart);
-  Console::print("\n\n\n\n\n\n######################\n");
-  Console::print("Current EL: %u\n", Std::getCurrentEL());
+  GIC400 *gic = new GIC400();
+  SystemTimer *timer = new SystemTimer();
   DriverManager::load(gpio);
   DriverManager::load(uart);
+  DriverManager::load(gic);
+  DriverManager::load(timer);
+
+  DriverManager::startAll();
+
+  Console::setKernelConsole(uart);
+  Console::print("\n\n\n\n\n\n############################################\n");
+  Console::print("Current EL: %u\n", Std::getCurrentEL());
+
   Console::print("BootAlloc Start: 0x%x BootAlloc end: 0x%x\n",
                  &_boot_alloc_start, &_boot_alloc_end);
   Console::print("Heap Start: 0x%x Heap end: 0x%x\n",
@@ -46,6 +54,10 @@ extern "C" void kernel_main() {
   KernelHeapAllocator *kha = new KernelHeapAllocator(
       (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
   GlobalKernelAlloc::setAllocator(kha);
+
+  Console::print("List of loaded drivers:\n");
+  for (auto d : *DriverManager::getAll())
+    Console::print("Driver %s\n", d->getName());
 
   init_sched();
 
@@ -57,7 +69,7 @@ extern "C" void kernel_main() {
   spin_msec(50);
 
   timerInit();
-  Console::print("######################\n");
+  Console::print("############################################\n");
 
   _hang_forever();
 }

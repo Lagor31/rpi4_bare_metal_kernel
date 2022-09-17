@@ -73,9 +73,8 @@ void init_sched() { splck_init(&sched_lock); }
 
 void timerInit() {
   disable_irq();
-  gicInit();
-  RPI_WaitMicroSecondsT1(100000);
-  RPI_WaitMicroSecondsT3(200000);
+  SystemTimer::WaitMicroT1(100000);
+  SystemTimer::WaitMicroT3(200000);
   Console::print("Timer init on core: %d\n", get_core());
   enable_irq();
 }
@@ -101,11 +100,11 @@ extern "C" void irq_handler_spx(irq_regs_t regs) {
           get_core(), irq, cpu, core_activations_l[0], core_activations_l[1],
           core_activations_l[2], core_activations_l[3]);
       splck_lck(&sched_lock);
-      RPI_WaitMicroSecondsT1(20000);
-      RPI_GetSystemTimer()->control_status |= 0b0010;
+      SystemTimer::WaitMicroT1(200000);
+      SystemTimer::getTimer()->control_status |= 0b0010;
       splck_done(&sched_lock);
 
-      if ((core_activations_l[0] % 10) == 0) send_sgi(2, 1);
+      if ((core_activations_l[0] % 10) == 0) GIC400::send_sgi(2, 1);
 
       break;
 
@@ -122,11 +121,11 @@ extern "C" void irq_handler_spx(irq_regs_t regs) {
           core_activations_l[2], core_activations_l[3]);
 
       splck_lck(&sched_lock);
-      RPI_GetSystemTimer()->control_status |= 0b1000;
-      RPI_WaitMicroSecondsT3(40000);
+      SystemTimer::getTimer()->control_status |= 0b1000;
+      SystemTimer::WaitMicroT3(40000);
 
       splck_done(&sched_lock);
-      if ((core_activations_l[3] % 20) == 0) send_sgi(2, 2);
+      if ((core_activations_l[3] % 20) == 0) GIC400::send_sgi(2, 2);
       break;
     case 1023:
       Console::print("SPOURIOUS INT RECEIVED Core%d: %x\r\n", get_core(), irq);
@@ -232,7 +231,6 @@ extern "C" void serror_handler_lower_aarch32() {
 
 extern "C" void panic() {
   disable_irq();
-  print_gic_state();
   Console::print_no_lock("Panicking on Core %d!\n", get_core());
   unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
   unsigned int irq = irq_ack_reg & 0x2FF;

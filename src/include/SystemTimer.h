@@ -13,8 +13,9 @@
 
 #include <stdint.h>
 
-#include "Mem.h"
 #include "Lock.h"
+#include "Mem.h"
+#include "Driver.h"
 
 #define RPI_SYSTIMER_BASE (MMIO::PERIPHERAL_BASE + 0x3000UL)
 
@@ -28,8 +29,16 @@ typedef struct {
   volatile uint32_t compare3;
 } rpi_sys_timer_t;
 
-extern rpi_sys_timer_t* RPI_GetSystemTimer(void);
-extern void RPI_WaitMicroSecondsT1(uint32_t us);
-extern void RPI_WaitMicroSecondsT3(uint32_t us);
+class SystemTimer : public Driver {
+ public:
+  SystemTimer();
+  void init();
+  const char* getName();
+  void unload();
+  static void WaitMicroT1(uint32_t us);
+  static void WaitMicroT3(uint32_t us);
+
+  static rpi_sys_timer_t* getTimer();
+};
 
 #endif

@@ -1,22 +1,13 @@
 #include "../include/Uart.h"
 
-#include "../include/Mem.h"
 #include "../include/Gpio.h"
+#include "../include/Mem.h"
 
 unsigned char UART::uart_output_queue[];
 unsigned int UART::uart_output_queue_write;
 unsigned int UART::uart_output_queue_read;
 
-void UART::init() {}
-const char *UART::getName() { return "UART Driver\n"; }
-void UART::unload() {}
-
-UART::UART(){};
-
-UART::UART(GPIO *gpio) : UART() {
-  UART::uart_output_queue_read = 0;
-  UART::uart_output_queue_write = 0;
-
+void UART::init() {
   MMIO::write(AUX_ENABLES, 1);  // enable UART1
   MMIO::write(AUX_MU_IER_REG, 0);
   MMIO::write(AUX_MU_CNTL_REG, 0);
@@ -28,6 +19,16 @@ UART::UART(GPIO *gpio) : UART() {
   gpio->gpio_useAsAlt5(14);
   gpio->gpio_useAsAlt5(15);
   MMIO::write(AUX_MU_CNTL_REG, 3);  // enable RX/TX
+}
+const char *UART::getName() { return "UART Driver"; }
+void UART::unload() {}
+
+UART::UART(){};
+
+UART::UART(GPIO *g) : UART() {
+  UART::uart_output_queue_read = 0;
+  UART::uart_output_queue_write = 0;
+  gpio = g;
 }
 
 unsigned int UART::isOutputQueueEmpty() {

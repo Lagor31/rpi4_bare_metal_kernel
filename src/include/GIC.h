@@ -1,6 +1,8 @@
 #ifndef __GIC_400_H__
 #define __GIC_400_H__
 
+#include "Driver.h"
+
 #define GIC400_BASE (0xFF840000UL)
 
 /* CoreLink GIC-400 Generic Interrupt Controller */
@@ -65,9 +67,7 @@
 #define GIC400_ICFG_LEVEL_SENSITIVE (0 << 1)
 #define GIC400_ICFG_EDGE_TRIGGERED (1 << 1)
 
-
-
-#define GIC_BASE 0xffff0000FF840000 
+#define GIC_BASE 0xffff0000FF840000
 #define GICD_DIST_BASE (GIC_BASE + 0x00001000)
 #define GICC_CPU_BASE (GIC_BASE + 0x00002000)
 
@@ -133,12 +133,28 @@ typedef struct {
   volatile unsigned int dir;
 } gic400_gicc_t;
 
-extern void print_gic_state();
-extern void gicInit();
+class GIC400 : public Driver {
+ public:
+  //Driver Interface
+  void init();
+  const char* getName();
+  void unload();
+
+  //GIC400
+  GIC400();
+  void print_gic_state();
+  void enable_interrupt(unsigned int irq);
+  void dis_interrupt(unsigned int irq);
+  void assign_target(unsigned int irq, unsigned int cpu);
+  static void send_sgi(unsigned int irq, unsigned int cpu);
+
+ private:
+};
+
 void spin_msec(unsigned int n);
+
 extern "C" unsigned int get_core();
 extern "C" unsigned int get_el();
-void send_sgi(unsigned int irq, unsigned int cpu);
 
 typedef struct {
   gic400_gicd_t* gicd;
