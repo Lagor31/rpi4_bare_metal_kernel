@@ -101,9 +101,6 @@ _start_mmu:
     msr    sctlr_el1, x0
     isb
 
-    /* ldr     x1, =__cpu0_stack
-    mov     sp, x1 */
-
     // Clean the BSS section
     ldr     x1, =__bss_start     // Start address
     ldr     w2, =__bss_size      // Size of the section
@@ -119,8 +116,6 @@ _launch_kernel:
 4:  wfi
     b       4b
 
-
-
 .balign 4096
 .global id_pg_dir
 id_pg_dir:
@@ -131,7 +126,6 @@ id_pg_dir:
 high_pg_dir:
     .space (6 * (1 << 12)), 0
 
-
 .globl memzero
 memzero:
     /* store 8 bytes of zero to [x0], then x0 += 8 */
@@ -140,8 +134,6 @@ memzero:
     /* branch if greater than zero */
     b.gt memzero
     ret
-
-
 
 /* changes tmp1, tmp2 only */
 .macro create_table_entry, tbl, ntbl, va, shift, flags, tmp1, tmp2
@@ -182,7 +174,6 @@ memzero:
     b.le 2b
 .endm
 
-
 map_identity:
     /* save return address */
     mov x29, x30
@@ -220,7 +211,6 @@ tmp1, tmp2 - temporary registers.
     /* restore return address */
     mov x30, x29
     ret
-
 
 map_high:
     /* save return address */
@@ -307,7 +297,6 @@ map_high:
 .section ".text"
 
 .macro _kernel_exit
-
 	ldr	w19,      [sp, #16 * 16]
 	ldp	lr,  x20, [sp, #16 * 15]
 
@@ -366,7 +355,7 @@ map_high:
 .endm
 
 hang:
-   _kernel_entry
+    _kernel_entry
     bl panic
  1:    
     wfi
@@ -380,7 +369,6 @@ irq_sp0:
     _kernel_entry
     bl    irq_handler_sp0
 _kernel_exit
-
 
 irq_spx:
     _kernel_entry
@@ -397,7 +385,6 @@ irq_aarch32:
     bl    irq_handler_lower_aarch32
     _kernel_exit
 
-
 /*
     Sync Handlers
 */
@@ -407,18 +394,15 @@ sync_sp0:
     bl    sync_handler_sp0
     _kernel_exit
   
-
 sync_spx:
     _kernel_entry
     bl  sync_handler_spx
     _kernel_exit
 
-
 sync_aarch64:
     _kernel_entry
     bl     sync_handler_lower_aarch64
     _kernel_exit
-
 
 sync_aarch32:
     _kernel_entry
@@ -433,14 +417,12 @@ fiq_sp0:
     bl  fiq_handler_sp0
     _kernel_exit
 
-
 fiq_spx:
     _kernel_entry
     bl  fiq_handler_spx
     _kernel_exit
 
 fiq_aarch64:
-
     _kernel_entry
     bl  fiq_handler_lower_aarch64
     _kernel_exit
@@ -450,7 +432,6 @@ fiq_aarch32:
     bl  fiq_handler_lower_aarch32
     _kernel_exit
 
-
 /*
     SError Handlers
 */
@@ -458,8 +439,6 @@ serror_sp0:
     _kernel_entry
     bl  serror_handler_sp0
     _kernel_exit
-
-
 
 serror_spx:
     _kernel_entry

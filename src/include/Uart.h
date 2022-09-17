@@ -7,7 +7,6 @@
 
 #define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK / (baud * 8)) - 1)
 
-using ltl::console::Console;
 class UART : public Driver, public Console {
  public:
   UART(GPIO *);

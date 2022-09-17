@@ -10,7 +10,6 @@ class Core {
   static void start(uint32_t core, void (*func)(void));
   static void disableIRQ();
   static void enableIRQ();
-
 };
 
 #endif

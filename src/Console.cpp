@@ -5,11 +5,8 @@
 #include "include/Spinlock.h"
 #include "include/Stdlib.h"
 
-using ltl::console::Console;
-
 static Spinlock *lock;
-
-Console *Console::kernel_console = nullptr;
+static Console *kernel_console;
 
 void Console::print_no_lock(const char *format, ...) {
   char **arg = (char **)&format;
@@ -73,6 +70,7 @@ void Console::print_no_lock(const char *format, ...) {
 
 void Console::print(const char *format, ...) {
   if (kernel_console == nullptr) return;
+
   lock->getLock();
 
   char **arg = (char **)&format;

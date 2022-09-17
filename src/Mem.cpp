@@ -3,7 +3,6 @@
 #include "include/SMP.h"
 #include "include/KernelHeapAllocator.h"
 
-using ltl::console::Console;
 
 MemoryAllocator *GlobalKernelAlloc::kalloc = nullptr;
 

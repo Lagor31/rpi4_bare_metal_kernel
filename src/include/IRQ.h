@@ -11,9 +11,6 @@ extern "C" void enable_irq();
 extern "C" void disable_irq();
 // void disable_interrupt_controller();
 void handle_irq();
-void timerInit();
-void wait_msec(unsigned int n);
-void timerInit();
 void init_sched();
 // splck_t sched_lock;
 
@@ -55,8 +52,5 @@ enum vc_irqs {
 
 };
 
-void enable_interrupt_controller();
-
-void disable_interrupt_controller();
 
 #endif

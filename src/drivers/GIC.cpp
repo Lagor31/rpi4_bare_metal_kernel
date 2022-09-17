@@ -6,8 +6,6 @@
 #include "../include/Mem.h"
 #include "../include/SystemTimer.h"
 
-using ltl::console::Console;
-
 GIC400::GIC400(){};
   
 void GIC400::print_gic_state() {

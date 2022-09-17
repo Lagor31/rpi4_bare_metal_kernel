@@ -3,8 +3,6 @@
 #include "include/Console.h"
 #include "include/GIC.h"
 
-using ltl::console::Console;
-
 Spinlock::Spinlock() { this->l.val = SPLCK_UNLOCKED; }
 
 extern "C" void spin_lock(volatile unsigned int *t);

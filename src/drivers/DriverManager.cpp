@@ -1,8 +1,6 @@
 #include "../include/Console.h"
 #include "../include/Driver.h"
 
-using ltl::console::Console;
-
 Vector<Driver*>* DriverManager::drivers;
 
 void DriverManager::load(Driver* d) {

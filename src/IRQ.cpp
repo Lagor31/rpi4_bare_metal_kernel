@@ -17,31 +17,6 @@ extern "C" uint64_t get_far_el1();
 extern "C" uint64_t get_esr_el1();
 extern "C" uint64_t get_elr_el1();
 
-void enable_interrupt_controller() {
-  REGS_IRQ->irq0_enable_0 =
-      SYS_TIMER_IRQ_1 | SYS_TIMER_IRQ_3 | AUX_IRQ | AUX_IRQ2;
-}
-void disable_interrupt_controller() { REGS_IRQ->irq0_enable_0 = 0; }
-
-using ltl::console::Console;
-
-// Memory-Mapped I/O output
-static inline void mmio_write(intptr_t reg, uint32_t data) {
-  *(volatile uint32_t *)reg = data;
-}
-
-// Memory-Mapped I/O input
-static inline uint32_t mmio_read(intptr_t reg) {
-  return *(volatile uint32_t *)reg;
-}
-static inline void io_halt(void) { asm volatile("wfi"); }
-
-
-
-void raw_write_daif(uint32_t daif) {
-  __asm__ __volatile__("msr DAIF, %0\n\t" : : "r"(daif) : "memory");
-}
-
 // Current level w/ SP0
 extern "C" void irq_handler_sp0() {
   Console::print("Received IRQ Exception on core %d!!!\n", get_core());
@@ -68,9 +43,7 @@ extern "C" void serror_handler_sp0() {
 }
 
 Spinlock *sched_lock;
-
 void init_sched() { sched_lock = new Spinlock(); }
-
 uint64_t core_activations[4] = {0};
 
 // Current EL with SPx
@@ -228,5 +201,4 @@ extern "C" void panic() {
   unsigned int irq = irq_ack_reg & 0x2FF;
   Console::print_no_lock("IRQ: 0x%d\n", irq);
   MMIO::write(GICC_EOIR, irq_ack_reg);
-  // enable_irq();
 }

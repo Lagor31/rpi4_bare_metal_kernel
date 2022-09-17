@@ -15,8 +15,6 @@
 #include "include/Uart.h"
 #include "include/Vector.h"
 
-using ltl::console::Console;
-
 extern void *_boot_alloc_start;
 extern void *_boot_alloc_end;
 
