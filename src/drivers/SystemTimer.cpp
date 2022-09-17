@@ -12,13 +12,11 @@
 
 #include <stdint.h>
 
-#include "../include/Lock.h"
+#include "../include/Spinlock.h"
 
 static rpi_sys_timer_t* rpiSystemTimer = (rpi_sys_timer_t*)RPI_SYSTIMER_BASE;
 
-rpi_sys_timer_t* SystemTimer::getTimer(void) {
-  return rpiSystemTimer;
-}
+rpi_sys_timer_t* SystemTimer::getTimer(void) { return rpiSystemTimer; }
 
 SystemTimer::SystemTimer() {}
 

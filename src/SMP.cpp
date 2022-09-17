@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "include/Console.h"
+#include "include/Core.h"
 #include "include/GIC.h"
 #include "include/IRQ.h"
 #include "include/Stdlib.h"
@@ -16,49 +17,23 @@ extern "C" void _wait_for_interrupt();
 extern "C" void c_init_core() {
   //_hang_forever();
   enable_irq();
-  // spin_msec(1000);
   Console::print("@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
                  get_core());
   _wait_for_interrupt();
-  //_hang_forever();
 
+  /* // We're never getting here, our cores only respond to interrupts
   if (get_core() == 3) _hang_forever();
-  // spin_msec(2000);
   while (true) {
-    // asm volatile("wfe");
-
-    /*  if (get_core() == 2 && first == 0) {
-       uint64_t *err = (uint64_t *)0xffffffffffffff0;
-       *err = 1234567;
-
-       Console::print("\n\n\nRecovered from exception \n\n");
-       first++;
-     } */
-
-    spin_msec(100 + get_core() * 20);
-
+    Core::spinms(100 + get_core() * 20);
     splck_lck(&sched_lock);
-    // if(get_core() == 3)
-    spin_msec(30);
-
+    Core::spinms(30);
     core_activations[get_core()]++;
-    // Console::print("Core%d alive!\n", get_core());
-
     splck_done(&sched_lock);
-
     Console::print(
         "@@@@@@@@@@@@@@@@ Core %d still alive!"
         "@@@@@@@@@@@@@@@\n",
         get_core());
-    /* Console::print_special(
-        "@@@@@@@@@@@@@@@@ Core %d still alive!"
-        "@@@@@@@@@@@@@@@\n",
-        get_core()); */
-    /*
-        if ((core_activations[get_core()] % 50 == 0))
-          Console::print("@@@@@@@@@@@@@@@@ Core %d still alive!
-       @@@@@@@@@@@@@@@\n", get_core()); */
-  }
+  } */
 }
 
 void start_core1(void (*func)(void)) {

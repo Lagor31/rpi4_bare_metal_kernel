@@ -4,7 +4,7 @@
 #include "include/Gpio.h"
 #include "include/IRQ.h"
 #include "include/KernelHeapAllocator.h"
-#include "include/Lock.h"
+#include "include/Spinlock.h"
 #include "include/Mem.h"
 #include "include/Mmu.h"
 #include "include/SMP.h"
@@ -13,6 +13,8 @@
 #include "include/SystemTimer.h"
 #include "include/Uart.h"
 #include "include/Vector.h"
+#include "include/Core.h"
+
 using ltl::console::Console;
 
 extern void *_boot_alloc_start;
@@ -61,12 +63,13 @@ extern "C" void kernel_main() {
 
   init_sched();
 
+  Core::spinms(10);
   start_core3(&init_core);
-  spin_msec(10);
+  Core::spinms(10);
   start_core2(&init_core);
-  spin_msec(10);
+  Core::spinms(10);
   start_core1(&init_core);
-  spin_msec(50);
+  Core::spinms(10);
 
   timerInit();
   Console::print("############################################\n");

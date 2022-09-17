@@ -4,9 +4,10 @@
 #include <stdint.h>
 
 #include "include/Console.h"
+#include "include/Core.h"
 #include "include/GIC.h"
-#include "include/Lock.h"
 #include "include/Mem.h"
+#include "include/Spinlock.h"
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
 #include "include/sysregs.h"
@@ -67,9 +68,9 @@ extern "C" void serror_handler_sp0() {
   _hang_forever();
 }
 
-splck_t sched_lock;
+Spinlock *sched_lock;
 
-void init_sched() { splck_init(&sched_lock); }
+void init_sched() { sched_lock = new Spinlock(); }
 
 void timerInit() {
   disable_irq();
@@ -89,20 +90,20 @@ extern "C" void irq_handler_spx(irq_regs_t regs) {
   switch (irq) {
     case (SYSTEM_TIMER_IRQ_1):
       MMIO::write(GICC_EOIR, irq);
-
-      splck_lck(&sched_lock);
+      sched_lock->getLock();
+      // splck_lck(&sched_lock);
       for (int i = 0; i < 4; ++i) core_activations_l[i] = core_activations[i];
-      splck_done(&sched_lock);
-
+      // splck_done(&sched_lock);
+      sched_lock->release();
       Console::print(
           "\nTimer IRQ 1\n\tCore%d IRQ: %d From: Core%d\n"
           "\tC0: %u C1:%u C2:%u C3:%u\n",
           get_core(), irq, cpu, core_activations_l[0], core_activations_l[1],
           core_activations_l[2], core_activations_l[3]);
-      splck_lck(&sched_lock);
+      sched_lock->getLock();
       SystemTimer::WaitMicroT1(200000);
       SystemTimer::getTimer()->control_status |= 0b0010;
-      splck_done(&sched_lock);
+      sched_lock->release();
 
       if ((core_activations_l[0] % 10) == 0) GIC400::send_sgi(2, 1);
 
@@ -110,9 +111,9 @@ extern "C" void irq_handler_spx(irq_regs_t regs) {
 
     case (SYSTEM_TIMER_IRQ_3):
       MMIO::write(GICC_EOIR, irq);
-      splck_lck(&sched_lock);
+      sched_lock->getLock();
       for (int i = 0; i < 4; ++i) core_activations_l[i] = core_activations[i];
-      splck_done(&sched_lock);
+      sched_lock->release();
 
       Console::print(
           "\nTimer IRQ 3\n\tCore%d IRQ: %d From: Core%d\n"
@@ -120,11 +121,11 @@ extern "C" void irq_handler_spx(irq_regs_t regs) {
           get_core(), irq, cpu, core_activations_l[0], core_activations_l[1],
           core_activations_l[2], core_activations_l[3]);
 
-      splck_lck(&sched_lock);
+      sched_lock->getLock();
       SystemTimer::getTimer()->control_status |= 0b1000;
       SystemTimer::WaitMicroT3(40000);
 
-      splck_done(&sched_lock);
+      sched_lock->release();
       if ((core_activations_l[3] % 20) == 0) GIC400::send_sgi(2, 2);
       break;
     case 1023:
@@ -133,9 +134,9 @@ extern "C" void irq_handler_spx(irq_regs_t regs) {
       break;
     default:
       MMIO::write(GICC_EOIR, irq);
-      splck_lck(&sched_lock);
+      sched_lock->getLock();
       for (int i = 0; i < 4; ++i) core_activations_l[i] = core_activations[i];
-      splck_done(&sched_lock);
+      sched_lock->release();
       Console::print(
           "Received IRQ Exception\n\tCore%d IRQ: %d From: Core%d\n"
           "\tC0: %u C1:%u C2:%u C3:%u\n",
@@ -143,9 +144,9 @@ extern "C" void irq_handler_spx(irq_regs_t regs) {
           core_activations_l[2], core_activations_l[3]);
       break;
   }
-  splck_lck(&sched_lock);
+  sched_lock->getLock();
   core_activations[get_core()]++;
-  splck_done(&sched_lock);
+  sched_lock->release();
 }
 
 extern "C" void sync_handler_spx(irq_regs_t *regs) {
@@ -161,8 +162,7 @@ extern "C" void sync_handler_spx(irq_regs_t *regs) {
     Console::print_no_lock("ESR_EL1: 0x%x - 0x%x\n", regs->esr_el1, cause);
     Console::print_no_lock("SPRS_EL1: 0x%x\n", regs->sprs_el1);
     Console::print_no_lock("LR:       0x%x\n", regs->lr);
-
-    spin_msec(1000 + get_core() * 10);
+    Core::spinms(1000 + get_core() * 10);
   }
   _hang_forever();
 }

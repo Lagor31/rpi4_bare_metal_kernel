@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 
-#include "Lock.h"
+#include "Spinlock.h"
 #include "Mem.h"
 #include "Driver.h"
 

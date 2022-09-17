@@ -133,14 +133,19 @@ typedef struct {
   volatile unsigned int dir;
 } gic400_gicc_t;
 
+typedef struct {
+  gic400_gicd_t* gicd;
+  gic400_gicc_t* gicc;
+} gic400_t;
+
 class GIC400 : public Driver {
  public:
-  //Driver Interface
+  // Driver Interface
   void init();
   const char* getName();
   void unload();
 
-  //GIC400
+  // GIC400
   GIC400();
   void print_gic_state();
   void enable_interrupt(unsigned int irq);
@@ -149,18 +154,10 @@ class GIC400 : public Driver {
   static void send_sgi(unsigned int irq, unsigned int cpu);
 
  private:
+  gic400_t gic400;
 };
-
-void spin_msec(unsigned int n);
 
 extern "C" unsigned int get_core();
 extern "C" unsigned int get_el();
-
-typedef struct {
-  gic400_gicd_t* gicd;
-  gic400_gicc_t* gicc;
-} gic400_t;
-
-extern gic400_t gic400;
 
 #endif

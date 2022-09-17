@@ -2,12 +2,12 @@
 
 #include <cstdarg>
 
-#include "include/Lock.h"
+#include "include/Spinlock.h"
 #include "include/Stdlib.h"
 
 using ltl::console::Console;
 
-static splck_t lock;
+static Spinlock *lock;
 
 Console *Console::kernel_console = nullptr;
 
@@ -73,7 +73,7 @@ void Console::print_no_lock(const char *format, ...) {
 
 void Console::print(const char *format, ...) {
   if (kernel_console == nullptr) return;
-  splck_lck(&lock);
+  lock->getLock();
 
   char **arg = (char **)&format;
   int c;
@@ -131,12 +131,11 @@ void Console::print(const char *format, ...) {
       }
     }
   }
-  splck_done(&lock);
-
+  lock->release();
   va_end(args);
 };
 
 void Console::setKernelConsole(Console *in) {
   kernel_console = in;
-  splck_init(&lock);
+  lock = new Spinlock();
 };

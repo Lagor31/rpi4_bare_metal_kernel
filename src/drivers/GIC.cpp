@@ -8,8 +8,6 @@
 
 using ltl::console::Console;
 
-gic400_t gic400;
-
 GIC400::GIC400(){};
   
 void GIC400::print_gic_state() {
@@ -119,13 +117,3 @@ const char* GIC400::getName() { return "GIC400"; }
 
 void GIC400::unload() {}
 
-void spin_msec(unsigned int n) {
-  rpi_sys_timer_t* sys_timer = SystemTimer::getTimer();
-
-  unsigned int target = sys_timer->counter_lo + (n * 1000);
-  unsigned int t = sys_timer->counter_lo;
-
-  while (t < target) {
-    t = sys_timer->counter_lo;
-  }
-}

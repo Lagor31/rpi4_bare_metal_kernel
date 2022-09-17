@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "Lock.h"
+#include "Spinlock.h"
 #include "Mem.h"
 
 extern "C" void enable_irq();

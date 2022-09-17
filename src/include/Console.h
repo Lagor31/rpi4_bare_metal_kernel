@@ -1,7 +1,7 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
-#include "Lock.h"
+#include "Spinlock.h"
 
 
 namespace ltl {
