@@ -1,6 +1,6 @@
-#include "KernelHeapAllocator.h"
+#include "../include/KernelHeapAllocator.h"
 
-#include "../Console.h"
+#include "../include/Console.h"
 
 KernelHeapAllocator::KernelHeapAllocator(unsigned char *s, unsigned char *e) {
   ptr = s;

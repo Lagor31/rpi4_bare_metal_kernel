@@ -1,7 +1,7 @@
-#include "Uart.h"
+#include "../include/Uart.h"
 
-#include "../Mem.h"
-#include "Gpio.h"
+#include "../include/Mem.h"
+#include "../include/Gpio.h"
 
 unsigned char UART::uart_output_queue[];
 unsigned int UART::uart_output_queue_write;

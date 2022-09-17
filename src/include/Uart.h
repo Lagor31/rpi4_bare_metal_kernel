@@ -1,8 +1,8 @@
 #ifndef UART_H
 #define UART_H
 
-#include "../Console.h"
-#include "../Mem.h"
+#include "Console.h"
+#include "Mem.h"
 #include "Gpio.h"
 
 #define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK / (baud * 8)) - 1)

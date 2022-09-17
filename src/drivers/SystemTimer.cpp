@@ -8,11 +8,11 @@
 
 */
 
-#include "SystemTimer.h"
+#include "../include/SystemTimer.h"
 
 #include <stdint.h>
 
-#include "Lock.h"
+#include "../include/Lock.h"
 
 extern splck_t timer_lock;
 static rpi_sys_timer_t* rpiSystemTimer = (rpi_sys_timer_t*)RPI_SYSTIMER_BASE;

@@ -1,8 +1,7 @@
-#include "Mem.h"
-
-#include "Console.h"
-#include "SMP.h"
-#include "mem/KernelHeapAllocator.h"
+#include "include/Mem.h"
+#include "include/Console.h"
+#include "include/SMP.h"
+#include "include/KernelHeapAllocator.h"
 
 using ltl::console::Console;
 

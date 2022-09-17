@@ -1,5 +1,5 @@
-#include "sysregs.h"
-#include "../mmu/Mmu.h"
+#include "../include/sysregs.h"
+#include "../include/Mmu.h"
 
 
 //1MB for initial boot alloc, used to setup real kernel Heap allocator

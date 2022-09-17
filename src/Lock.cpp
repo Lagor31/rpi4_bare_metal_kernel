@@ -1,7 +1,7 @@
-#include "Lock.h"
+#include "include/Lock.h"
 
-#include "Console.h"
-#include "GIC.h"
+#include "include/Console.h"
+#include "include/GIC.h"
 
 using ltl::console::Console;
 

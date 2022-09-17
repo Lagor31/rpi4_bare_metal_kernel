@@ -1,6 +1,6 @@
 #ifndef BOOT_ALLOCATOR_H
 #define BOOT_ALLOCATOR_H
-#include "../Mem.h"
+#include "Mem.h"
 
 class BootAllocator : public MemoryAllocator {
  public:

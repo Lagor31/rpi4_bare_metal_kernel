@@ -1,18 +1,18 @@
-#include "Console.h"
-#include "GIC.h"
-#include "IRQ.h"
-#include "Lock.h"
-#include "Mem.h"
-#include "SMP.h"
-#include "SystemTimer.h"
-#include "drivers/Gpio.h"
-#include "drivers/Uart.h"
-#include "mem/BootAllocator.h"
-#include "mem/KernelHeapAllocator.h"
-#include "mmu/Mmu.h"
-#include "stdlib/Stdlib.h"
-#include "stdlib/String.h"
-#include "stdlib/Vector.h"
+#include "include/Console.h"
+#include "include/GIC.h"
+#include "include/IRQ.h"
+#include "include/Lock.h"
+#include "include/Mem.h"
+#include "include/SMP.h"
+#include "include/SystemTimer.h"
+#include "include/Gpio.h"
+#include "include/Uart.h"
+#include "include/BootAllocator.h"
+#include "include/KernelHeapAllocator.h"
+#include "include/Mmu.h"
+#include "include/Stdlib.h"
+#include "include/String.h"
+#include "include/Vector.h"
 using ltl::console::Console;
 
 extern void *_boot_alloc_start;
@@ -38,18 +38,17 @@ extern "C" void kernel_main() {
   Console::print("Current EL: %u\n", Std::getCurrentEL());
   DriverManager::load(gpio);
   DriverManager::load(uart);
-  /*   Console::print("BootAlloc Start: 0x%x BootAlloc end: 0x%x\n",
-                   &_boot_alloc_start, &_boot_alloc_end);
-    Console::print("Heap Start: 0x%x Heap end: 0x%x\n",
-                   (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
-  */
+  Console::print("BootAlloc Start: 0x%x BootAlloc end: 0x%x\n",
+                 &_boot_alloc_start, &_boot_alloc_end);
+  Console::print("Heap Start: 0x%x Heap end: 0x%x\n",
+                 (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
 
   KernelHeapAllocator *kha = new KernelHeapAllocator(
       (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
   GlobalKernelAlloc::setAllocator(kha);
 
   init_sched();
-  
+
   start_core3(&init_core);
   spin_msec(10);
   start_core2(&init_core);
@@ -58,6 +57,7 @@ extern "C" void kernel_main() {
   spin_msec(50);
 
   timerInit();
+  Console::print("######################\n");
 
   _hang_forever();
 }

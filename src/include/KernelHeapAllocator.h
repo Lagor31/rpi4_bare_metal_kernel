@@ -1,7 +1,7 @@
 #ifndef KERNEL_HEAP_ALLOCATOR_H
 #define KERNEL_HEAP_ALLOCATOR_H
 
-#include "../Mem.h"
+#include "Mem.h"
 
 class KernelHeapAllocator : public MemoryAllocator {
  public:

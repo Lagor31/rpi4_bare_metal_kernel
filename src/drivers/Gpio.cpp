@@ -1,7 +1,7 @@
 // GPIO
-#include "Gpio.h"
+#include "../include/Gpio.h"
 
-#include "../Mem.h"
+#include "../include/Mem.h"
 
 GPIO::GPIO(){};
 

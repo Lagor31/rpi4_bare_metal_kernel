@@ -1,6 +1,6 @@
-#include "Mem.h"
-#include "mmu/Mmu.h"
-#include "stdlib/Stdlib.h"
+#include "include/Mem.h"
+#include "include/Mmu.h"
+#include "include/Stdlib.h"
 
 extern "C" void kernel_mmu_init() __attribute__((section(".boot")));
 extern "C" void kernel_main();

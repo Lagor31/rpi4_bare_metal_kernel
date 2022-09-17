@@ -32,6 +32,4 @@ extern rpi_sys_timer_t* RPI_GetSystemTimer(void);
 extern void RPI_WaitMicroSecondsT1(uint32_t us);
 extern void RPI_WaitMicroSecondsT3(uint32_t us);
 
-static splck_t timer_lock;
-
 #endif

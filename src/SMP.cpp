@@ -1,11 +1,11 @@
-#include "SMP.h"
+#include "include/SMP.h"
 
 #include <stdint.h>
 
-#include "Console.h"
-#include "GIC.h"
-#include "IRQ.h"
-#include "stdlib/Stdlib.h"
+#include "include/Console.h"
+#include "include/GIC.h"
+#include "include/IRQ.h"
+#include "include/Stdlib.h"
 
 using ltl::console::Console;
 uint32_t first = 0;

@@ -1,9 +1,9 @@
-#include "Console.h"
+#include "include/Console.h"
 
 #include <cstdarg>
 
-#include "Lock.h"
-#include "stdlib/Stdlib.h"
+#include "include/Lock.h"
+#include "include/Stdlib.h"
 
 using ltl::console::Console;
 

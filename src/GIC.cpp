@@ -1,10 +1,10 @@
 
-#include "GIC.h"
+#include "include/GIC.h"
 
-#include "Console.h"
-#include "IRQ.h"
-#include "Mem.h"
-#include "SystemTimer.h"
+#include "include/Console.h"
+#include "include/IRQ.h"
+#include "include/Mem.h"
+#include "include/SystemTimer.h"
 
 using ltl::console::Console;
 
