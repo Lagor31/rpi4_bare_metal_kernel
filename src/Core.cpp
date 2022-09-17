@@ -1,26 +1,11 @@
-#include "../include/Core.h"
-
-#include "../include/SystemTimer.h"
+#include "include/Core.h"
+#include "include/SystemTimer.h"
 
 extern "C" void enable_irq(void);
 extern "C" void disable_irq(void);
 
 void Core::disableIRQ() { disable_irq(); }
 void Core::enableIRQ() { enable_irq(); }
-
-void store64(unsigned long address, unsigned long value) {
-  *(unsigned long *)address = (unsigned long)value;
-}
-
-unsigned long load64(unsigned long address) {
-  return *(unsigned long *)address;
-}
-
-void store32(unsigned long address, unsigned int value) {
-  *(unsigned int *)address = value;
-}
-
-unsigned int load32(unsigned long address) { return *(unsigned int *)address; }
 
 void Core::start(uint32_t core, void (*func)(void)) {
   if (core < 1 || core > 3) return;

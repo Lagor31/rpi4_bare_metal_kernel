@@ -9,12 +9,10 @@
 #include "include/Stdlib.h"
 
 extern "C" void _wait_for_interrupt();
-extern "C" void c_init_core() {
+
+extern "C" void initSecondaryCore() {
   enable_irq();
   Console::print("@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
                  get_core());
   _wait_for_interrupt();
 }
-
-
-

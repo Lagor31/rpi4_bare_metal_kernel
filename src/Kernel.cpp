@@ -21,8 +21,6 @@ extern void *_boot_alloc_end;
 extern void *_heap_start;
 extern void *_heap_end;
 
-extern "C" void wakeup_core(uint32_t core, uint64_t func);
-
 extern "C" void init_core();
 extern "C" void kernel_main() {
   BootAllocator boot_allocator = BootAllocator(
@@ -59,7 +57,7 @@ extern "C" void kernel_main() {
   for (auto d : *DriverManager::getAll())
     Console::print("Driver %s\n", d->getName());
 
-  init_sched();
+  initSchedLock();
 
   Core::spinms(10);
   Core::start(3, &init_core);

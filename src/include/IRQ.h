@@ -11,7 +11,7 @@ extern "C" void enable_irq();
 extern "C" void disable_irq();
 // void disable_interrupt_controller();
 void handle_irq();
-void init_sched();
+void initSchedLock();
 // splck_t sched_lock;
 
 struct irq_regs_t {

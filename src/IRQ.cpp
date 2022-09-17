@@ -43,7 +43,7 @@ extern "C" void serror_handler_sp0() {
 }
 
 Spinlock *sched_lock;
-void init_sched() { sched_lock = new Spinlock(); }
+void initSchedLock() { sched_lock = new Spinlock(); }
 uint64_t core_activations[4] = {0};
 
 // Current EL with SPx
@@ -151,6 +151,7 @@ extern "C" void irq_handler_lower_aarch64() {
   Console::print("Lower level with aarch64\n");
   _hang_forever();
 }
+
 extern "C" void sync_handler_lower_aarch64() {
   Console::print("Received SYNC Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch64\n");
@@ -170,12 +171,12 @@ extern "C" void serror_handler_lower_aarch64() {
 }
 
 // LowerEL ausing AArch32
-
 extern "C" void irq_handler_lower_aarch32() {
   Console::print("Received IRQ Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch32\n");
   _hang_forever();
 }
+
 extern "C" void sync_handler_lower_aarch32() {
   Console::print("Received SYNC Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch32\n");

@@ -6,7 +6,6 @@
 .global spin_lock
 .type spin_lock, @function
 spin_lock:
-
     mov	w2, #1
 	sevl
 l1:	wfe
@@ -14,7 +13,6 @@ l2:	ldaxr	w1, [x0]
 	cbnz	w1, l1
 	stxr	w1, w2, [x0]
     cbnz	w1, l2
-
 	ret
 
 .global spin_unlock
@@ -76,14 +74,6 @@ disable_irq:
     msr   daifset, #2
     ret
 
-/* .globl elr_el1_inc
-.type elr_el1_inc, @function
-elr_el1_inc:
-    mrs x0, elr_el1
-    add x0, x0, #4
-    mrs elr_el1, x0
-    ret */
-
 .globl get_core
 .type get_core, @function
 get_core:
@@ -94,7 +84,7 @@ get_core:
 
 .section ".boot"
 .extern __stack_start   
-.extern c_init_core 
+.extern initSecondaryCore 
 .globl init_core
 .type init_core, @function
 init_core:   
@@ -169,7 +159,7 @@ init_core:
     mov     x2, #0
     mov     x3, #0
 
-    ldr     x4, =c_init_core
+    ldr     x4, =initSecondaryCore
     br     x4
 
 1:

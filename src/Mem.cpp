@@ -3,6 +3,20 @@
 #include "include/SMP.h"
 #include "include/KernelHeapAllocator.h"
 
+void store64(unsigned long address, unsigned long value) {
+  *(unsigned long *)address = (unsigned long)value;
+}
+
+unsigned long load64(unsigned long address) {
+  return *(unsigned long *)address;
+}
+
+void store32(unsigned long address, unsigned int value) {
+  *(unsigned int *)address = value;
+}
+
+unsigned int load32(unsigned long address) { return *(unsigned int *)address; }
+
 
 MemoryAllocator *GlobalKernelAlloc::kalloc = nullptr;
 
