@@ -7,6 +7,10 @@
 class Core {
  public:
   static void spinms(uint64_t);
+  static void start(uint32_t core, void (*func)(void));
+  static void disableIRQ();
+  static void enableIRQ();
+
 };
 
 #endif

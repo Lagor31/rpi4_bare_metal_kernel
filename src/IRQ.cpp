@@ -36,8 +36,7 @@ static inline uint32_t mmio_read(intptr_t reg) {
 }
 static inline void io_halt(void) { asm volatile("wfi"); }
 
-extern void enable_irq(void);
-extern void disable_irq(void);
+
 
 void raw_write_daif(uint32_t daif) {
   __asm__ __volatile__("msr DAIF, %0\n\t" : : "r"(daif) : "memory");
@@ -72,13 +71,6 @@ Spinlock *sched_lock;
 
 void init_sched() { sched_lock = new Spinlock(); }
 
-void timerInit() {
-  disable_irq();
-  SystemTimer::WaitMicroT1(100000);
-  SystemTimer::WaitMicroT3(200000);
-  Console::print("Timer init on core: %d\n", get_core());
-  enable_irq();
-}
 uint64_t core_activations[4] = {0};
 
 // Current EL with SPx

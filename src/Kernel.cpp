@@ -1,19 +1,19 @@
 #include "include/BootAllocator.h"
 #include "include/Console.h"
+#include "include/Core.h"
 #include "include/GIC.h"
 #include "include/Gpio.h"
 #include "include/IRQ.h"
 #include "include/KernelHeapAllocator.h"
-#include "include/Spinlock.h"
 #include "include/Mem.h"
 #include "include/Mmu.h"
 #include "include/SMP.h"
+#include "include/Spinlock.h"
 #include "include/Stdlib.h"
 #include "include/String.h"
 #include "include/SystemTimer.h"
 #include "include/Uart.h"
 #include "include/Vector.h"
-#include "include/Core.h"
 
 using ltl::console::Console;
 
@@ -64,14 +64,18 @@ extern "C" void kernel_main() {
   init_sched();
 
   Core::spinms(10);
-  start_core3(&init_core);
+  Core::start(3, &init_core);
   Core::spinms(10);
-  start_core2(&init_core);
+  Core::start(2, &init_core);
   Core::spinms(10);
-  start_core1(&init_core);
+  Core::start(1, &init_core);
   Core::spinms(10);
 
-  timerInit();
+  SystemTimer::WaitMicroT1(100000);
+  SystemTimer::WaitMicroT3(200000);
+
+  Core::enableIRQ();
+  Console::print("Timer init on core: %d\n", get_core());
   Console::print("############################################\n");
 
   _hang_forever();
