@@ -12,7 +12,7 @@ void Console::print_no_lock(const char *format, ...) {
   char **arg = (char **)&format;
   int c;
   char buf[40];
-  int n;
+  long n;
 
   va_list args;
   va_start(args, format);
@@ -41,8 +41,8 @@ void Console::print_no_lock(const char *format, ...) {
         case 'd':
         case 'u':
         case 'x':
-          n = va_arg(args, int);
-          Std::itoa(buf, c, n);
+          n = va_arg(args, long);
+          Std::itoa1(buf, c, n);
           p = buf;
           goto string;
           break;
@@ -76,7 +76,7 @@ void Console::print(const char *format, ...) {
   char **arg = (char **)&format;
   int c;
   char buf[40];
-  int n;
+  long n;
 
   va_list args;
   va_start(args, format);
@@ -105,8 +105,8 @@ void Console::print(const char *format, ...) {
         case 'd':
         case 'u':
         case 'x':
-          n = va_arg(args, int);
-          Std::itoa(buf, c, n);
+          n = va_arg(args, long);
+          Std::itoa1(buf, c, n);
           p = buf;
           goto string;
           break;

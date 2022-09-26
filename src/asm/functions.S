@@ -3,6 +3,32 @@
 
 .section ".text"
 
+
+.globl core_switch_to
+core_switch_to:
+    mov x10, #0
+    add x8, x0, x10
+    mov x9, sp
+    /* save context into prev->core_context */
+    stp x19, x20, [x8], #16
+    stp x21, x22, [x8], #16
+    stp x23, x24, [x8], #16
+    stp x25, x26, [x8], #16
+    stp x27, x28, [x8], #16
+    stp x29, x9,  [x8], #16
+    str x30, [x8]
+    /* restore context from next->core_context */
+    add x8, x1, x10
+    ldp x19, x20, [x8], #16
+    ldp x21, x22, [x8], #16
+    ldp x23, x24, [x8], #16
+    ldp x25, x26, [x8], #16
+    ldp x27, x28, [x8], #16
+    ldp x29, x9,  [x8], #16
+    ldr x30, [x8]
+    mov sp, x9
+    ret
+
 .global spin_lock
 .type spin_lock, @function
 spin_lock:
@@ -46,6 +72,12 @@ get_el:
     mrs x0, CurrentEL
     and x0, x0, #12
     lsr x0, x0, #2
+    ret
+
+.globl get_sp
+.type get_sp, @function
+get_sp:
+    mov x0, sp
     ret
 
 
@@ -151,8 +183,12 @@ init_core:
     //Init MMU Here with &kernel_main = virt addr of kernel
 
     mov    x0, #5
+    dsb ish
+    isb
+
     msr    sctlr_el1, x0
     isb
+    dsb ish
 
     mov     x0, #0
     mov     x1, #0

@@ -7,7 +7,7 @@
 #include "../include/SystemTimer.h"
 
 GIC400::GIC400(){};
-  
+
 void GIC400::print_gic_state() {
   /*
   GICC_CTLR: 00000001 GICC_PMR:    000000f8 GICC_BPR: 00000002
@@ -103,8 +103,16 @@ void GIC400::init() {
 
   assign_target(2, 2);
   assign_target(2, 1);
+  assign_target(2, 3);
+
+  assign_target(1, 0);
+  assign_target(1, 2);
+  assign_target(1, 1);
+  assign_target(1, 3);
   // enable_interrupt(1);
+
   enable_interrupt(2);
+  enable_interrupt(1);
   /*assign_target(2, 3); */
   // enable_interrupt(2);
   gic400.gicc->ctl = GIC400_CTL_ENABLE;
@@ -114,4 +122,3 @@ void GIC400::init() {
 const char* GIC400::getName() { return "GIC400"; }
 
 void GIC400::unload() {}
-

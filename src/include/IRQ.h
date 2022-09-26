@@ -4,8 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "Spinlock.h"
 #include "Mem.h"
+#include "Spinlock.h"
 
 extern "C" void enable_irq();
 extern "C" void disable_irq();
@@ -14,7 +14,7 @@ void handle_irq();
 void initSchedLock();
 // splck_t sched_lock;
 
-struct irq_regs_t {
+struct CoreContext {
   uint64_t gpr[30];
 
   /// The link register, aka x30.
@@ -22,6 +22,8 @@ struct irq_regs_t {
   uint64_t elr_el1;
   uint64_t sprs_el1;
   uint64_t esr_el1;
+  uint64_t sp_el0;
+  uint64_t far_el1;
 } __attribute__((packed));
 
 struct arm_irq_regs_2711 {
@@ -51,6 +53,5 @@ enum vc_irqs {
   AUX_IRQ2 = (1 << 30)
 
 };
-
 
 #endif

@@ -98,8 +98,12 @@ _load_ttbr:
 _start_mmu:
     //Init MMU Here with &kernel_main = virt addr of kernel
     mov    x0, #5 //ENABLE MMU, CACHE ENABLE
+    dsb ish
+    isb
+
     msr    sctlr_el1, x0
     isb
+    dsb ish
 
     // Clean the BSS section
     ldr     x1, =__bss_start     // Start address
@@ -317,14 +321,19 @@ map_high:
 	ldp	x22, x23, [sp, #16 * 11]
 	ldp	x24, x25, [sp, #16 * 12]
 	ldp	x26, x27, [sp, #16 * 13]
+    ldp x28, x29, [sp, #16 * 17]
+    msr sp_el0, x28
 	ldp	x28, x29, [sp, #16 * 14]
-	add	sp,  sp,  #16 * 17
+	add	sp,  sp,  #16 * 18
+    //msr     SPSel, #0
+ 
 	eret
 
 .endm
 
 .macro _kernel_entry
-    sub	sp,  sp,  #16 * 17
+
+    sub	sp,  sp,  #16 * 18
 	// Store all general purpose registers on the stack.
 	stp	x0,  x1,  [sp, #16 * 0]
 	stp	x2,  x3,  [sp, #16 * 1]
@@ -349,7 +358,9 @@ map_high:
 	mrs	x3,  ESR_EL1
 	stp	lr,  x1,  [sp, #16 * 15]
 	stp	x2,  x3,  [sp, #16 * 16]
-
+    mrs x1, SP_EL0
+    mrs x2, FAR_EL1
+    stp x1,x2,[sp, #16 * 17]
 	// x0 is the first argument for the function called through `\handler`.
 	mov	x0,  sp
 .endm
@@ -368,7 +379,7 @@ hang:
 irq_sp0:
     _kernel_entry
     bl    irq_handler_sp0
-_kernel_exit
+    _kernel_exit
 
 irq_spx:
     _kernel_entry

@@ -2,7 +2,7 @@
 #define KERNEL_HEAP_ALLOCATOR_H
 
 #include "Mem.h"
-
+#include "Spinlock.h"
 class KernelHeapAllocator : public MemoryAllocator {
  public:
   KernelHeapAllocator(){};
@@ -15,7 +15,8 @@ class KernelHeapAllocator : public MemoryAllocator {
 
  private:
   unsigned char *ptr;
-  long bytes_left;
+  signed long bytes_left;
+  Spinlock l;
 };
 
 #endif

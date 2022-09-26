@@ -1,13 +1,20 @@
 #include "include/Spinlock.h"
 
 #include "include/Console.h"
+#include "include/Core.h"
 #include "include/GIC.h"
-
-Spinlock::Spinlock() { this->l.val = SPLCK_UNLOCKED; }
 
 extern "C" void spin_lock(volatile unsigned int *t);
 extern "C" void spin_unlock(volatile unsigned int *t);
 
-void Spinlock::getLock() { spin_lock(&this->l.val); }
+Spinlock::Spinlock() { this->l.val = SPLCK_UNLOCKED; }
 
-void Spinlock::release() { spin_unlock(&this->l.val); }
+void Spinlock::getLock() {
+  spin_lock(&this->l.val);
+  ownerPid = Core::current[get_core()]->pid;
+}
+
+void Spinlock::release() {
+  spin_unlock(&this->l.val);
+  ownerPid = 0;
+}

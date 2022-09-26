@@ -9,7 +9,29 @@ unsigned long Std::getCurrentEL() {
 /*  Format a string and print it on the screen, just like the libc
    function printf. */
 
-void Std::itoa(char *buf, int base, int d) {
+#define INT_DIGITS 19 
+#define UINT_DIGITS 20
+
+char *Std::itoa(int base, long d) {
+  static char buf[INT_DIGITS + 2];
+  char *p = buf + INT_DIGITS + 1; /* points to terminating '\0' */
+  if (d >= 0) {
+    do {
+      *--p = '0' + (d % 10);
+      d /= 10;
+    } while (d != 0);
+    return p;
+  } else { /* i < 0 */
+    do {
+      *--p = '0' - (d % 10);
+      d /= 10;
+    } while (d != 0);
+    *--p = '-';
+  }
+  return p;
+}
+
+void Std::itoa1(char *buf, int base, long d) {
   char *p = buf;
   char *p1, *p2;
   unsigned long ud = d;

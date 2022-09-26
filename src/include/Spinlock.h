@@ -1,6 +1,8 @@
 #ifndef LOCK_H
 #define LOCK_H
 
+#include <stdint.h>
+
 #define SPLCK_UNLOCKED (0)
 #define SPLCK_LOCKED (1)
 
@@ -16,9 +18,10 @@ class Spinlock {
   Spinlock();
   void getLock();
   void release();
+  splck_t l;
 
  private:
-  splck_t l;
+  uint64_t ownerPid;
 };
 
 #endif

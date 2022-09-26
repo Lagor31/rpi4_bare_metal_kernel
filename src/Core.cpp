@@ -1,4 +1,6 @@
 #include "include/Core.h"
+
+#include "include/GIC.h"
 #include "include/SystemTimer.h"
 
 extern "C" void enable_irq(void);
@@ -6,6 +8,26 @@ extern "C" void disable_irq(void);
 
 void Core::disableIRQ() { disable_irq(); }
 void Core::enableIRQ() { enable_irq(); }
+
+extern "C" void core_switch_to(Task *prev, Task *next);
+Task *Core::current[4];
+// Vector<Task *> *Core::runningQ[4];
+Task *Core::runningQ[4][THREAD_N];
+void Core::preemptDisable() { Core::current[get_core()]->c++; }
+void Core::preemptEnable() { Core::current[get_core()]->c--; }
+bool Core::isPreamptable() { return Core::current[get_core()]->c <= 0; }
+
+void Core::switchTo(Task *next) {
+  Task *current = Core::current[get_core()];
+  if (current == next) {
+    return;
+  }
+
+  Task *prev = current;
+  Core::current[get_core()] = next;
+  // Core::enableIRQ();
+  core_switch_to(prev, next);
+}
 
 void Core::start(uint32_t core, void (*func)(void)) {
   if (core < 1 || core > 3) return;
@@ -29,13 +51,11 @@ void Core::start(uint32_t core, void (*func)(void)) {
   }
 }
 
-void Core::spinms(uint64_t n) {
-  rpi_sys_timer_t *sys_timer = SystemTimer::getTimer();
+void Core::spinms(uint32_t n) {
+  uint64_t counter = SystemTimer::getCounter();
+  uint64_t target = (counter + (n * 1000));
 
-  unsigned int target = sys_timer->counter_lo + (n * 1000);
-  unsigned int t = sys_timer->counter_lo;
-
-  while (t < target) {
-    t = sys_timer->counter_lo;
+  while (counter < target) {
+    counter = SystemTimer::getCounter();
   }
 }

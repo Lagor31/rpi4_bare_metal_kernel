@@ -13,9 +13,9 @@
 
 #include <stdint.h>
 
-#include "Spinlock.h"
-#include "Mem.h"
 #include "Driver.h"
+#include "Mem.h"
+#include "Spinlock.h"
 
 #define RPI_SYSTIMER_BASE (MMIO::PERIPHERAL_BASE + 0x3000UL)
 
@@ -37,8 +37,9 @@ class SystemTimer : public Driver {
   void unload();
   static void WaitMicroT1(uint32_t us);
   static void WaitMicroT3(uint32_t us);
-
   static rpi_sys_timer_t* getTimer();
+  static Spinlock* lock;
+  static uint64_t getCounter();
 };
 
 #endif

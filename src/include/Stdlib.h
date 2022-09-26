@@ -8,7 +8,8 @@ extern "C" void _hang_forever();
 class Std {
  public:
   static unsigned long getCurrentEL();
-  static void itoa(char *buf, int base, int d);
+  static char *itoa(int base, long d);
+  static void itoa1(char *buf, int base, long d);
 
   static unsigned long strlen(const char *s) {
     unsigned long len = 0;

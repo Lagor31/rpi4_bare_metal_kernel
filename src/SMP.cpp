@@ -9,10 +9,29 @@
 #include "include/Stdlib.h"
 
 extern "C" void _wait_for_interrupt();
-
+extern void kernelThread();
 extern "C" void initSecondaryCore() {
-  enable_irq();
+  Core::disableIRQ();
+  uint64_t core = get_core();
   Console::print("@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
-                 get_core());
+                 core);
+  //Core::runningQ[core] = new Vector<Task *>();
+  // if (core != 1) _wait_for_interrupt();
+
+  // if (core == 3) {
+  Task *n;
+  for (int i = 0; i < THREAD_N; ++i) {
+    Task *t = Task::createKernelTask((uint64_t)&kernelThread);
+    Core::runningQ[core][i] = t;
+    if (i == 0) n = t;
+  }
+  Core::current[core] = new Task();
+  Core::enableIRQ();
+
+  /*   Core::preemptDisable();
+    Core::switchTo(n);
+    Core::preemptEnable();
+   */  //}
+
   _wait_for_interrupt();
 }
