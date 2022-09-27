@@ -5,6 +5,7 @@
 #include "include/Gpio.h"
 #include "include/IRQ.h"
 #include "include/KernelHeapAllocator.h"
+#include "include/Lists/ArrayList.hpp"
 #include "include/Mem.h"
 #include "include/Mmu.h"
 #include "include/SMP.h"
@@ -15,6 +16,8 @@
 #include "include/Task.h"
 #include "include/Uart.h"
 #include "include/Vector.h"
+
+using SD::Lists::ArrayList;
 
 extern void *_boot_alloc_start;
 extern void *_boot_alloc_end;
@@ -65,6 +68,12 @@ extern "C" void kernel_main() {
   Console::print("Timer init on core: %d\n", get_core());
   Console::print("############################################\n");
 
+  ArrayList<String> list;
+  list.insert("world").insert("hello", 0);
+  Console::print("%s  %s\n", list.get(0).get(), list.get(1).get());
+  Console::print("%s\nCount: %d\n", list.remove(1).get(0).get(), list.count());
+  Console::print("%s \n", list.set(0, "goodbye!").get(0).get());
+
   // Core::runningQ[get_core()] = new Vector<Task *>();
 
   /*  Task *t = Task::createKernelTask((uint64_t)&kernelThread);
@@ -80,19 +89,19 @@ extern "C" void kernel_main() {
     // Core::current[get_core()] = t;
   }
 
-  //Core::spinms(1000);
+  // Core::spinms(1000);
   Core::start(1, &init_core);
-  //Core::spinms(1000);
+  // Core::spinms(1000);
   Core::start(2, &init_core);
-  //Core::spinms(1000);
+  // Core::spinms(1000);
   Core::start(3, &init_core);
-  //Core::spinms(1000);
+  // Core::spinms(1000);
 
   Core::current[get_core()] = new Task();
   //  SystemTimer::WaitMicroT3(300000);
   Core::enableIRQ();
   SystemTimer::WaitMicroT1(100000);
-  //Core::switchTo(n);
+  // Core::switchTo(n);
 
   _hang_forever();
 }

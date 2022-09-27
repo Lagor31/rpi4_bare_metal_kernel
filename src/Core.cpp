@@ -1,34 +1,40 @@
 #include "include/Core.h"
 
+#include "include/Console.h"
 #include "include/GIC.h"
+#include "include/Stdlib.h"
 #include "include/SystemTimer.h"
 
 extern "C" void enable_irq(void);
 extern "C" void disable_irq(void);
+
+extern "C" uint64_t get_far_el1();
+extern "C" uint64_t get_esr_el1();
+extern "C" uint64_t get_elr_el1();
 
 void Core::disableIRQ() { disable_irq(); }
 void Core::enableIRQ() { enable_irq(); }
 
 extern "C" void core_switch_to(core_context *prev, core_context *next);
 Task *Core::current[4];
-//Vector<Task *> *Core::runningQ[4];
+// Vector<Task *> *Core::runningQ[4];
 Task *Core::runningQ[4][THREAD_N];
 void Core::preemptDisable() { Core::current[get_core()]->c++; }
 void Core::preemptEnable() { Core::current[get_core()]->c--; }
 bool Core::isPreamptable() { return Core::current[get_core()]->c <= 0; }
 
 void Core::switchTo(Task *next) {
-  //preemptDisable();
+  // preemptDisable();
   Task *current = Core::current[get_core()];
   if (current == next) {
-    //preemptEnable();
+    // preemptEnable();
     return;
   }
 
   Task *prev = current;
   Core::current[get_core()] = next;
   core_switch_to(&prev->second, &next->second);
-  //preemptEnable();
+  // preemptEnable();
 }
 
 void Core::start(uint32_t core, void (*func)(void)) {
@@ -51,6 +57,27 @@ void Core::start(uint32_t core, void (*func)(void)) {
       asm volatile("sev");
       break;
   }
+}
+
+void Core::panic(const char *message) {
+  unsigned long add = get_far_el1();
+  unsigned long cause = get_esr_el1();
+  unsigned long ret = get_elr_el1();
+
+  int i = 0;
+  for (; i < 4; ++i) {
+    if (get_core() != i) GIC400::send_sgi(1, i);
+  }
+  i = 0;
+  while (i++ < 5) {
+    Console::print_no_lock("Panicking on core %d!!!\n", get_core());
+    Console::print_no_lock("Message:\n%s\n", message);
+    // printRegs(regs);
+    Core::spinms(1000 + get_core() * 10);
+  }
+  _hang_forever();
+  // regs->elr_el1 += 4;
+  i++;
 }
 
 void Core::spinms(uint32_t n) {

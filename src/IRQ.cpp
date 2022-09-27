@@ -85,7 +85,7 @@ extern "C" void irq_handler_spx(CoreContext *regs) {
 
       GIC400::send_sgi(2, 1);
       GIC400::send_sgi(2, 2);
-      GIC400::send_sgi(2, 3); 
+      GIC400::send_sgi(2, 3);
       break;
 
     case (SYSTEM_TIMER_IRQ_3):
@@ -305,11 +305,3 @@ extern "C" void serror_handler_lower_aarch32() {
   _hang_forever();
 }
 
-extern "C" void panic() {
-  disable_irq();
-  Console::print_no_lock("Panicking on Core %d!\n", get_core());
-  unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
-  unsigned int irq = irq_ack_reg & 0x2FF;
-  Console::print_no_lock("IRQ: 0x%d\n", irq);
-  MMIO::write(GICC_EOIR, irq_ack_reg);
-}

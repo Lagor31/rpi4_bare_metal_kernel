@@ -1,10 +1,11 @@
 #include "include/Mem.h"
+
 #include "include/Console.h"
-#include "include/SMP.h"
 #include "include/KernelHeapAllocator.h"
+#include "include/SMP.h"
 #include "include/Spinlock.h"
 
-Spinlock  memLock;
+
 void store64(unsigned long address, unsigned long value) {
   *(unsigned long *)address = (unsigned long)value;
 }

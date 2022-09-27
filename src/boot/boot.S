@@ -365,12 +365,12 @@ map_high:
 	mov	x0,  sp
 .endm
 
-hang:
+/* hang:
     _kernel_entry
     bl panic
  1:    
     wfi
-    b     1b 
+    b     1b  */
 
 /*
     IRQ Handlers

@@ -14,6 +14,7 @@ class Core {
   static void disableIRQ();
   static void enableIRQ();
   static void switchTo(Task *next);
+  static void panic(const char *s);
   static Task *current[4];
   // static Vector<Task*> *runningQ[4];
   static Task *runningQ[4][THREAD_N];
@@ -22,7 +23,5 @@ class Core {
   static void preemptEnable();
   static bool isPreamptable();
 };
-
-
 
 #endif
