@@ -8,6 +8,7 @@ class Task {
  public:
   Task();
   CoreContext context;
+  core_context second;
   long state;
   uint64_t pid;
   long priority;
@@ -17,5 +18,8 @@ class Task {
   static Task *createKernelTask(uint64_t entryPoint);
   static uint64_t freePID;
 };
+
+void idleTask();
+void kernelTask();
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef STDLIB_H
 #define STDLIB_H
 
+#include <stdint.h>
+
 #include <cstddef>
 
 extern "C" void _hang_forever();
@@ -10,7 +12,7 @@ class Std {
   static unsigned long getCurrentEL();
   static char *itoa(int base, long d);
   static void itoa1(char *buf, int base, long d);
-
+  static uint32_t djb33_hash(uint64_t in);
   static unsigned long strlen(const char *s) {
     unsigned long len = 0;
     while (*s != '\0') {

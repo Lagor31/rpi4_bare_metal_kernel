@@ -25,8 +25,8 @@ void *KernelHeapAllocator::alloc(unsigned size) {
     uint64_t effectiveSize = ((uint64_t)ptr - (uint64_t)out);
     bytes_left -= effectiveSize;
     l.release();
-    Console::print("Alloc out=0x%x ptr=%x for size=%d ESize=0x%x\n", out, ptr,
-                   size, effectiveSize);
+    /* Console::print("Alloc out=0x%x ptr=%x for size=%d ESize=0x%x\n", out, ptr,
+                   size, effectiveSize); */
     return out;
   }
   l.release();

@@ -6,7 +6,7 @@
 
 #include "Task.h"
 #include "Vector.h"
-#define THREAD_N 100
+#define THREAD_N 500
 class Core {
  public:
   static void spinms(uint32_t);
@@ -22,5 +22,7 @@ class Core {
   static void preemptEnable();
   static bool isPreamptable();
 };
+
+
 
 #endif

@@ -9,24 +9,26 @@ extern "C" void disable_irq(void);
 void Core::disableIRQ() { disable_irq(); }
 void Core::enableIRQ() { enable_irq(); }
 
-extern "C" void core_switch_to(Task *prev, Task *next);
+extern "C" void core_switch_to(core_context *prev, core_context *next);
 Task *Core::current[4];
-// Vector<Task *> *Core::runningQ[4];
+//Vector<Task *> *Core::runningQ[4];
 Task *Core::runningQ[4][THREAD_N];
 void Core::preemptDisable() { Core::current[get_core()]->c++; }
 void Core::preemptEnable() { Core::current[get_core()]->c--; }
 bool Core::isPreamptable() { return Core::current[get_core()]->c <= 0; }
 
 void Core::switchTo(Task *next) {
+  //preemptDisable();
   Task *current = Core::current[get_core()];
   if (current == next) {
+    //preemptEnable();
     return;
   }
 
   Task *prev = current;
   Core::current[get_core()] = next;
-  // Core::enableIRQ();
-  core_switch_to(prev, next);
+  core_switch_to(&prev->second, &next->second);
+  //preemptEnable();
 }
 
 void Core::start(uint32_t core, void (*func)(void)) {

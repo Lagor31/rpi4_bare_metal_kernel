@@ -41,7 +41,9 @@ extern "C" void irq_handler_spx(CoreContext *regs) {
   unsigned int cpu = (irq_ack_reg >> 10) & 7;
   sched_lock->getLock();
   uint64_t core_activations_l[4];
-  uint64_t c = core_activations[get_core()] % THREAD_N;
+  // uint64_t c = core_activations[get_core()] % THREAD_N;
+
+  uint64_t c = Std::djb33_hash(core_activations[get_core()]) % THREAD_N;
   // Vector<Task *> *vnext = Core::runningQ[get_core()];
   Task *next = Core::runningQ[get_core()][c];
   sched_lock->release();
