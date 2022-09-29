@@ -32,8 +32,8 @@
 //#include <stdexcept>
 //#include <iostream>
 
+#include "../Console.h"
 #include "ArrayListInterface.hpp"
-#include "../Core.h"
 
 namespace SD::Lists {
 
@@ -87,7 +87,7 @@ class ArrayList : ArrayListInterface<T> {
    */
   ArrayList<T>& insert(T value, unsigned int index) {
     if (index > this->logicalLength) {
-      Core::panic("Expected index to be within length of list");
+      Console::print("Expected index to be within length of list");
     }
 
     if (1 + this->logicalLength >= this->physicalLength) {
@@ -112,7 +112,7 @@ class ArrayList : ArrayListInterface<T> {
    */
   T get(unsigned int index) {
     if (index >= this->logicalLength) {
-      Core::panic("Expected index to be within length of list");
+      Console::print("Expected index to be within length of list");
     }
 
     return this->array[index];
@@ -128,7 +128,7 @@ class ArrayList : ArrayListInterface<T> {
    */
   ArrayList<T>& set(unsigned int index, T value) {
     if (index >= this->logicalLength) {
-      Core::panic("Expected index to be within length of list");
+      Console::print("Expected index to be within length of list");
     }
 
     this->array[index] = value;
@@ -146,8 +146,7 @@ class ArrayList : ArrayListInterface<T> {
    */
   ArrayList<T>& remove(unsigned int index, unsigned int count = 1) {
     if (index + count > this->logicalLength) {
-      Core::panic(
-          "Expected segment to be within length of list");
+      Console::print("Expected segment to be within length of list");
     }
 
     for (unsigned int i = index; i < this->logicalLength; ++i) {

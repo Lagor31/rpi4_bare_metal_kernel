@@ -111,6 +111,12 @@ void GIC400::init() {
   assign_target(1, 3);
   // enable_interrupt(1);
 
+  assign_target(3, 0);
+  assign_target(3, 1);
+  assign_target(3, 2);
+  assign_target(3, 3);
+  enable_interrupt(3);
+
   enable_interrupt(2);
   enable_interrupt(1);
   /*assign_target(2, 3); */

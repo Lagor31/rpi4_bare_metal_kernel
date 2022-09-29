@@ -2,8 +2,11 @@
 
 #include "include/Console.h"
 #include "include/GIC.h"
+#include "include/Lists/ArrayList.hpp"
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
+
+using SD::Lists::ArrayList;
 
 extern "C" void enable_irq(void);
 extern "C" void disable_irq(void);
@@ -14,27 +17,38 @@ extern "C" uint64_t get_elr_el1();
 
 void Core::disableIRQ() { disable_irq(); }
 void Core::enableIRQ() { enable_irq(); }
-
-extern "C" void core_switch_to(core_context *prev, core_context *next);
+extern "C" void core_switch_to(core_context *prev, core_context *next,
+                               CoreContext *);
+Spinlock *Core::scheduler;
 Task *Core::current[4];
 // Vector<Task *> *Core::runningQ[4];
-Task *Core::runningQ[4][THREAD_N];
+SinglyLinkedList<Task *> *Core::runningQ[4];
+SinglyLinkedList<Task *> *Core::sleepingQ[4];
+
+void Core::printList(SinglyLinkedList<Task *> *l) {
+  for (int i = 0; i < l->count(); ++i) {
+    Console::print("PID: %d\n", l->get(i)->pid);
+  }
+}
+// Task *Core::runningQ[4][THREAD_N];
 void Core::preemptDisable() { Core::current[get_core()]->c++; }
 void Core::preemptEnable() { Core::current[get_core()]->c--; }
 bool Core::isPreamptable() { return Core::current[get_core()]->c <= 0; }
 
 void Core::switchTo(Task *next) {
-  // preemptDisable();
+  //Core::scheduler->getLock();
+  //preemptDisable();
   Task *current = Core::current[get_core()];
   if (current == next) {
-    // preemptEnable();
+    //preemptEnable();
     return;
   }
 
   Task *prev = current;
   Core::current[get_core()] = next;
-  core_switch_to(&prev->second, &next->second);
-  // preemptEnable();
+  //Core::scheduler->release();
+  core_switch_to(&prev->second, &next->second, &prev->context);
+  //preemptEnable();
 }
 
 void Core::start(uint32_t core, void (*func)(void)) {
@@ -63,7 +77,6 @@ void Core::panic(const char *message) {
   unsigned long add = get_far_el1();
   unsigned long cause = get_esr_el1();
   unsigned long ret = get_elr_el1();
-
   int i = 0;
   for (; i < 4; ++i) {
     if (get_core() != i) GIC400::send_sgi(1, i);

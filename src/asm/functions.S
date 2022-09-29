@@ -17,7 +17,11 @@ core_switch_to:
     stp x27, x28, [x0], #16
     stp x29, x9,  [x0], #16
     str x30, [x0]
+    
+    str x30, [x2, #8 * 31]
+    str x9, [x2, #8 * 34]
     /* restore context from next->core_context */
+    
     ldp x19, x20, [x1], #16
     ldp x21, x22, [x1], #16
     ldp x23, x24, [x1], #16

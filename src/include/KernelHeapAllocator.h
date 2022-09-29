@@ -15,8 +15,10 @@ class KernelHeapAllocator : public MemoryAllocator {
 
  private:
   unsigned char *ptr;
-  signed long bytes_left;
+  uint64_t bytes_left;
   Spinlock l;
+  /* You need space for the metadata and for the arena */
+  struct buddy *buddy;
 };
 
 #endif

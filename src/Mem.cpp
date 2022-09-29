@@ -5,7 +5,6 @@
 #include "include/SMP.h"
 #include "include/Spinlock.h"
 
-
 void store64(unsigned long address, unsigned long value) {
   *(unsigned long *)address = (unsigned long)value;
 }
@@ -19,7 +18,6 @@ void store32(unsigned long address, unsigned int value) {
 }
 
 unsigned int load32(unsigned long address) { return *(unsigned int *)address; }
-
 
 MemoryAllocator *GlobalKernelAlloc::kalloc = nullptr;
 
@@ -49,23 +47,23 @@ unsigned int MMIO::read(unsigned long reg) {
 }
 
 void *operator new(size_t size) {
-  //Console::print("New called Size: %d\n", size);
+  //Console::print_no_lock("New called Size: %d\n", size);
   return GlobalKernelAlloc::alloc(size);
 }
 void *operator new[](size_t size) {
-  //Console::print("New[] called Size: %d\n", size);
+  //Console::print_no_lock("New[] called Size: %d\n", size);
   return GlobalKernelAlloc::alloc(size);
 }
 void operator delete(void *p) {
-  //Console::print("Delete called\n");
+  //Console::print_no_lock("Delete called\n");
   GlobalKernelAlloc::free(p);
 }
 void operator delete(void *p, unsigned long s) {
-  //Console::print("Delete long called Size: %d\n", s);
+  //Console::print_no_lock("Delete long called Size: %d\n", s);
   GlobalKernelAlloc::free(p);
 }
 void operator delete[](void *p) {
-  //Console::print("Delete[] called\n");
+  //Console::print_no_lock("Delete[] called\n");
   GlobalKernelAlloc::free(p);
 }
 

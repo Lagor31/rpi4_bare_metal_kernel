@@ -2,6 +2,7 @@
 #define MEM_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 class MMIO {
  public:
@@ -37,13 +38,16 @@ Can be set to use different backends at runtime
 class GlobalKernelAlloc {
  private:
   static MemoryAllocator *kalloc;
-
+  static uint64_t freeMem;
  public:
   static MemoryAllocator *getAllocator();
   static void setAllocator(MemoryAllocator *in);
   static void *alloc(unsigned size);
   static void free(void *p);
   static unsigned long freeSpace();
+  static void decreaseFree(uint64_t size);
+  static void increaseFree(uint64_t size);
+
 };
 
 void store64(unsigned long address, unsigned long value);

@@ -4,10 +4,10 @@
 
 //1MB for initial boot alloc, used to setup real kernel Heap allocator
 .section ".boot_alloc"
-.space 1 * 1024 * 1024, 0
+.space 5 * 1024 * 1024, 0
 
 .section ".heap"
-.space 16 * 1024 * 1024, 0
+.space 30 * 1024 * 1024, 0
 
 .section ".boot", #alloc, #execinstr // Make sure the linker puts this at the start of the kernel image
 

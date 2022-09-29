@@ -9,6 +9,8 @@ static Spinlock *lock;
 static Console *kernel_console;
 
 void Console::print_no_lock(const char *format, ...) {
+  if (kernel_console == nullptr) return;
+
   char **arg = (char **)&format;
   int c;
   char buf[40];
@@ -70,8 +72,7 @@ void Console::print_no_lock(const char *format, ...) {
 
 void Console::print(const char *format, ...) {
   if (kernel_console == nullptr) return;
-
-  lock->getLock();
+  if (lock != NULL) lock->getLock();
 
   char **arg = (char **)&format;
   int c;
@@ -129,7 +130,7 @@ void Console::print(const char *format, ...) {
       }
     }
   }
-  lock->release();
+  if (lock != NULL) lock->release();
   va_end(args);
 };
 

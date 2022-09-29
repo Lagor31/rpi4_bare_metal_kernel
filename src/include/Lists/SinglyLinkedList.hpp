@@ -31,6 +31,7 @@
 
 //#include <stdexcept>
 
+#include "../Console.h"
 #include "../Lists/LinkedListInterface.hpp"
 #include "../Nodes/SinglyLinkedNode.hpp"
 
@@ -148,11 +149,11 @@ class SinglyLinkedList : LinkedListInterface<T> {
   SinglyLinkedList<T>& remove(unsigned int index, unsigned int count = 1) {
     SinglyLinkedNode<T>* nextNode =
         this->getNode(index + count - 1).getNextNode();
+    delete &this->getNode(index + count - 1);
     if (0 == index) {
       this->headNode = nextNode;
       return *this;
     }
-
     this->getNode(index - 1).setNextNode(nextNode);
     return *this;
   }
@@ -184,8 +185,7 @@ class SinglyLinkedList : LinkedListInterface<T> {
     for (unsigned int i = 0; i < index; ++i) {
       node = node->getNextNode();
       if (!node) {
-        Core::panic(
-            "Expected index to be within length of list");
+        Console::print("Expected index to be within length of list");
       }
     }
 
@@ -214,7 +214,7 @@ class SinglyLinkedList : LinkedListInterface<T> {
       node = node->getNextNode();
     }
     if (!node) {
-      Core::panic("Expected index to be within length of list");
+      Console::print("Expected index to be within length of list");
     }
 
     return *node;

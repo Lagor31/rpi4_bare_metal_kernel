@@ -16,8 +16,10 @@
 #include "include/Task.h"
 #include "include/Uart.h"
 #include "include/Vector.h"
+#define BUDDY_ALLOC_IMPLEMENTATION
+#include "include/buddy_alloc.h"
 
-using SD::Lists::ArrayList;
+using SD::Lists::SinglyLinkedList;
 
 extern void *_boot_alloc_start;
 extern void *_boot_alloc_end;
@@ -34,7 +36,8 @@ extern "C" void kernel_main() {
       (unsigned char *)&_boot_alloc_start, (unsigned char *)&_boot_alloc_end);
 
   GlobalKernelAlloc::setAllocator(&boot_allocator);
-  // We can use new with the boot allocator
+
+    // We can use new with the boot allocator
   DriverManager::init();
   GPIO *gpio = new GPIO();
   UART *uart = new UART(gpio);
@@ -68,25 +71,17 @@ extern "C" void kernel_main() {
   Console::print("Timer init on core: %d\n", get_core());
   Console::print("############################################\n");
 
-  ArrayList<String> list;
-  list.insert("world").insert("hello", 0);
-  Console::print("%s  %s\n", list.get(0).get(), list.get(1).get());
-  Console::print("%s\nCount: %d\n", list.remove(1).get(0).get(), list.count());
-  Console::print("%s \n", list.set(0, "goodbye!").get(0).get());
-
-  // Core::runningQ[get_core()] = new Vector<Task *>();
-
-  /*  Task *t = Task::createKernelTask((uint64_t)&kernelThread);
-   Core::runningQ[get_core()]->push_back(t); */
-  // Core::switchTo(t);
-
+  Core::scheduler = new Spinlock();
+  Core::runningQ[get_core()] = new SinglyLinkedList<Task *>();
+  Core::sleepingQ[get_core()] = new SinglyLinkedList<Task *>();
   Task *idle = Task::createKernelTask((uint64_t)&idleTask);
+  Core::runningQ[get_core()]->insert(idle);
+
   Task *n;
   for (int i = 0; i < THREAD_N; ++i) {
     Task *t = Task::createKernelTask((uint64_t)&kernelTask);
-    Core::runningQ[get_core()][i] = t;
+    Core::runningQ[get_core()]->insert(t);
     if (i == 0) n = t;
-    // Core::current[get_core()] = t;
   }
 
   // Core::spinms(1000);
@@ -101,7 +96,7 @@ extern "C" void kernel_main() {
   //  SystemTimer::WaitMicroT3(300000);
   Core::enableIRQ();
   SystemTimer::WaitMicroT1(100000);
-  // Core::switchTo(n);
+  //  Core::switchTo(n);
 
   _hang_forever();
 }

@@ -1,5 +1,11 @@
 #include "../include/Stdlib.h"
 
+#include "../include/Lists/ArrayList.hpp"
+#include "../include/Task.h"
+#include "../include/Console.h"
+
+using SD::Lists::ArrayList;
+
 unsigned long Std::getCurrentEL() {
   register unsigned long x0 __asm__("x0");
   __asm__("mrs x0, CurrentEL;" : : : "%x0");
@@ -31,14 +37,20 @@ char *Std::itoa(int base, long d) {
   return p;
 }
 
-uint32_t Std::djb33_hash(uint64_t in) {
-  uint32_t h = 5381;
+
+
+uint32_t Std::hash(uint64_t in) {
   uint32_t len = 0;
+  uint32_t h = 0;
+
   while (len++ < 8) {
-    /* h = 33 * h ^ s[i]; */
-    h += (h << 5);
-    h ^=  (in & (0xFF << len));
+    h += (in & (0xFF << (len * 2)));
+    h += (h << 10);
+    h ^= (h >> 6);
   }
+  h += (h << 3);
+  h ^= (h >> 11);
+  h += (h << 15);
   return h;
 }
 
