@@ -138,3 +138,5 @@ void Console::setKernelConsole(Console *in) {
   kernel_console = in;
   lock = new Spinlock();
 };
+
+Console *Console::getKernelConsole() { return kernel_console; }

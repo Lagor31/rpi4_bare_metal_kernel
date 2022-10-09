@@ -64,6 +64,11 @@ extern "C" void irq_handler_spx(CoreContext *regs) {
   Core::scheduler->release();
 
   switch (irq) {
+    case (125):
+      Console::print_no_lock("Uart int! %c\n", Console::getKernelConsole()->readChar());
+      MMIO::write(GICC_EOIR, irq);
+
+      break;
     case (SYSTEM_TIMER_IRQ_1):
       MMIO::write(GICC_EOIR, irq);
       sched_lock->getLock();

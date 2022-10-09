@@ -9,17 +9,19 @@ unsigned int UART::uart_output_queue_read;
 
 void UART::init() {
   MMIO::write(AUX_ENABLES, 1);  // enable UART1
-  MMIO::write(AUX_MU_IER_REG, 0);
+  // MMIO::write(AUX_MU_IER_REG, 0);
   MMIO::write(AUX_MU_CNTL_REG, 0);
   MMIO::write(AUX_MU_LCR_REG, 3);  // 8 bits
   MMIO::write(AUX_MU_MCR_REG, 0);
-  MMIO::write(AUX_MU_IER_REG, 0);
-  MMIO::write(AUX_MU_IIR_REG, 0xC6);  // disable interrupts
+  MMIO::write(AUX_MU_IER_REG, 0xD);
+  // MMIO::write(AUX_MU_IIR_REG, 0xC6);  // disable interrupts
   MMIO::write(AUX_MU_BAUD_REG, AUX_MU_BAUD(115200));
   gpio->gpio_useAsAlt5(14);
   gpio->gpio_useAsAlt5(15);
   MMIO::write(AUX_MU_CNTL_REG, 3);  // enable RX/TX
 }
+
+
 const char *UART::getName() { return "UART Driver"; }
 void UART::unload() {}
 
@@ -41,6 +43,9 @@ unsigned int UART::isReadByteReady() {
 unsigned int UART::isWriteByteReady() {
   return MMIO::read(AUX_MU_LSR_REG) & 0x20;
 }
+
+unsigned char UART::readChar() { return readByte(); }
+
 
 unsigned char UART::readByte() {
   while (!isReadByteReady())

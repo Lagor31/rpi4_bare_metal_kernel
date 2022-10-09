@@ -8,7 +8,7 @@
 #include "Task.h"
 using SD::Lists::SinglyLinkedList;
 
-#define THREAD_N 100
+#define THREAD_N 5
 class Core {
  public:
   static void spinms(uint32_t);

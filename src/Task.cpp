@@ -30,45 +30,13 @@ void kernelTask() {
 
     Core::preemptEnable();
     for (int i = 0; i < 100; ++i) Std::hash(i);
-    GIC400::send_sgi(3, get_core());
+    Core::current[core]->sleep(1000);
   }
   _hang_forever();
 }
 
-void Task::sleep(uint32_t ms) {
-  Core::preemptDisable();
-  /*
-    Console::print("Task Running List:\n");
-    Core::printList(Core::runningQ[get_core()]);
+void Task::sleep(uint32_t ms) { GIC400::send_sgi(3, get_core()); }
 
-    Console::print("Task Sleeping List:\n");
-    Core::printList(Core::sleepingQ[get_core()]);
-   */
-  // Core::scheduler->getLock();
-  uint32_t core = get_core();
-  for (int i = 0; i < Core::runningQ[core]->count(); ++i) {
-    if (this->pid == Core::runningQ[core]->get(i)->pid) {
-      Core::runningQ[core]->remove(i);
-      this->timer = SystemTimer::getCounter() + (ms * 1000);
-      Core::sleepingQ[core]->insert(this);
-      break;
-    }
-  }
-  uint64_t c0 = SystemTimer::getTimer()->compare0;
-  uint32_t h = Std::hash(c0);
-  uint32_t num = h % Core::runningQ[core]->count();
-  Task *next = Core::runningQ[get_core()]->get(num);
-  // Core::scheduler->release();
-  /* Console::print("Task Running List After:\n");
-  Core::printList(Core::runningQ[get_core()]);
-
-  Console::print("Task IRQ Sleeping List After:\n");
-  Core::printList(Core::sleepingQ[get_core()]); */
-  // Core::preemptDisable();
-  Core::switchTo(next);
-  Core::preemptEnable();
-  // Core::preemptEnable();
-}
 uint64_t Task::freePID = 1;
 
 Task::Task() { c = 0; }

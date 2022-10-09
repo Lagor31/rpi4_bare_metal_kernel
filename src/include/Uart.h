@@ -17,7 +17,8 @@ class UART : public Driver, public Console {
   void write(char);
   void write(const char *);
   void flush();
-
+  unsigned char readChar();
+  
   enum {
     AUX_BASE = MMIO::PERIPHERAL_BASE + 0x215000,
     AUX_IRQ = AUX_BASE,

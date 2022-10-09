@@ -100,6 +100,10 @@ void GIC400::init() {
 
   assign_target(SYSTEM_TIMER_IRQ_3, 3);
   enable_interrupt(SYSTEM_TIMER_IRQ_3);
+  
+  //Uart rec
+  assign_target(125, 0);
+  enable_interrupt(125);
 
   assign_target(2, 2);
   assign_target(2, 1);

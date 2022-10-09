@@ -16,8 +16,12 @@
 #include "include/Task.h"
 #include "include/Uart.h"
 #include "include/Vector.h"
-#define BUDDY_ALLOC_IMPLEMENTATION
 #include "include/buddy_alloc.h"
+#include "include/emmc.h"
+
+#define PACKED __attribute((__packed__))
+
+#define BUDDY_ALLOC_IMPLEMENTATION
 
 using SD::Lists::SinglyLinkedList;
 
@@ -29,6 +33,30 @@ extern void *_heap_end;
 
 extern "C" void init_core();
 
+#define BOOT_SIGNATURE 0xAA55
+
+typedef struct PACKED {
+  uint8_t head;
+  uint8_t sector : 6;
+  uint8_t cylinder_hi : 2;
+  uint8_t cylinder_lo;
+} chs_address;
+
+typedef struct PACKED {
+  uint8_t status;
+  chs_address first_sector;
+  uint8_t type;
+  chs_address last_sector;
+  uint32_t first_lba_sector;
+  uint32_t num_sectors;
+} partition_entry;
+
+typedef struct PACKED {
+  uint8_t bootCode[0x1BE];
+  partition_entry partitions[4];
+  uint16_t bootSignature;
+} master_boot_record;
+
 extern "C" void kernel_main() {
   Core::disableIRQ();
 
@@ -37,7 +65,7 @@ extern "C" void kernel_main() {
 
   GlobalKernelAlloc::setAllocator(&boot_allocator);
 
-    // We can use new with the boot allocator
+  // We can use new with the boot allocator
   DriverManager::init();
   GPIO *gpio = new GPIO();
   UART *uart = new UART(gpio);
@@ -70,6 +98,30 @@ extern "C" void kernel_main() {
 
   Console::print("Timer init on core: %d\n", get_core());
   Console::print("############################################\n");
+
+  if (!emmc_init(gpio)) {
+    Console::print("FAILED TO INIT EMMC\n");
+    Core::panic("FAILED TO INIT EMMC\n");
+  }
+
+  master_boot_record mbr;
+  emmc_read((uint8_t *)&mbr, sizeof(mbr));
+
+  if (mbr.bootSignature != BOOT_SIGNATURE) {
+    Console::print("BAD BOOT SIGNATURE: %X\n", mbr.bootSignature);
+  }
+
+  for (int i = 0; i < 4; i++) {
+    if (mbr.partitions[i].type == 0) {
+      break;
+    }
+
+    Console::print("Partition %d:\n", i);
+    Console::print("\t Type: %x\n", mbr.partitions[i].type);
+    Console::print("\t NumSecs: %d\n", mbr.partitions[i].num_sectors);
+    Console::print("\t Status: %d\n", mbr.partitions[i].status);
+    Console::print("\t Start: %d\n", mbr.partitions[i].first_lba_sector);
+  }
 
   Core::scheduler = new Spinlock();
   Core::runningQ[get_core()] = new SinglyLinkedList<Task *>();
