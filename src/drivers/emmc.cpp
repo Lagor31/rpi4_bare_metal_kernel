@@ -59,7 +59,7 @@ static const emmc_cmd commands[] = {
     RES_CMD,
     RES_CMD,
     RES_CMD,
-    RES_CMD,
+    {0, 0, 0, 0, 0, 0, RT48, 0, 1, 0, 1, 0, 24, 0},
     RES_CMD,
     RES_CMD,
     RES_CMD,
@@ -633,7 +633,7 @@ bool do_data_command(bool write, uint8_t *b, uint32_t bsize,
   int retry_count = 0;
   int max_retries = 3;
 
-  Console::print("EMMC_DEBUG: Sending command: %d\n", command);
+  // Console::print("EMMC_DEBUG: Sending command: %d\n", command);
 
   while (retry_count < max_retries) {
     if (emmc_command(command, block_no, 5000)) {
@@ -662,6 +662,17 @@ int do_read(uint8_t *b, uint32_t bsize, uint32_t block_no) {
   return bsize;
 }
 
+int do_write(uint8_t *b, uint32_t bsize, uint32_t block_no) {
+  // TODO ENSURE DATA MODE...
+
+  if (!do_data_command(true, b, bsize, block_no)) {
+    Console::print("EMMC_ERR: do_data_command failed\n");
+    return -1;
+  }
+
+  return bsize;
+}
+
 int emmc_read(uint8_t *buffer, uint32_t size) {
   if (device.offset % 512 != 0) {
     Console::print("EMMC_ERR: INVALID OFFSET: %d\n", device.offset);
@@ -674,6 +685,24 @@ int emmc_read(uint8_t *buffer, uint32_t size) {
 
   if (r != size) {
     Console::print("EMMC_ERR: READ FAILED: %d\n", r);
+    return -1;
+  }
+
+  return size;
+}
+
+int emmc_write(uint8_t *buffer, uint32_t size) {
+  if (device.offset % 512 != 0) {
+    Console::print("EMMC_ERR: INVALID OFFSET: %d\n", device.offset);
+    return -1;
+  }
+
+  uint32_t block = device.offset / 512;
+
+  int r = do_write(buffer, size, block);
+
+  if (r != size) {
+    Console::print("EMMC_ERR: WRITE FAILED: %d\n", r);
     return -1;
   }
 

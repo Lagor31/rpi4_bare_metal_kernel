@@ -1,4 +1,5 @@
 #include <stdint.h>
+
 #include "Gpio.h"
 
 /* #include <common.h>
@@ -147,6 +148,8 @@ typedef struct {
 #define EMMC ((emmc_regs *)EMMC_BASE)
 
 int emmc_read(uint8_t *buffer, uint32_t size);
+int emmc_write(uint8_t *buffer, uint32_t size);
+
 void emmc_seek(uint64_t offset);
 bool emmc_init(GPIO *gpio);
 
