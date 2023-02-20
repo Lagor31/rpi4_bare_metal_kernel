@@ -15,8 +15,7 @@ extern void kernelThread();
 extern "C" void initSecondaryCore() {
   Core::disableIRQ();
   uint64_t core = get_core();
-  Console::print("@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
-                 core);
+
   // Core::runningQ[core] = new Vector<Task *>();
   //  if (core != 1) _wait_for_interrupt();
   Core::runningQ[get_core()] = new SinglyLinkedList<Task *>();
@@ -32,7 +31,15 @@ extern "C" void initSecondaryCore() {
     Core::runningQ[core]->insert(t);
     if (i == 0) n = t;
   }
+
+  // if (core == 3) {
+  Task *screen = Task::createKernelTask((uint64_t)&screenTask);
+  Core::runningQ[core]->insert(screen);
+  //}
   Core::current[core] = new Task();
+  Console::print("@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
+                 core);
+
   Core::enableIRQ();
   // Core::switchTo(idle);
   /*   Core::preemptDisable();

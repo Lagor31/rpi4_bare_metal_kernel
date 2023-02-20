@@ -15,6 +15,9 @@
 .global _start  // Execution starts here
 
 _start:   
+
+/*     wfe
+    b _start */
     //w0 = dtb addr 32 bit
     //In our setup, only core0@EL3 gets here
 

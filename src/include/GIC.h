@@ -84,6 +84,11 @@
 #define SYSTEM_TIMER_IRQ_1 (0x61)  // 97
 #define SYSTEM_TIMER_IRQ_2 (0x62)  // 98
 #define SYSTEM_TIMER_IRQ_3 (0x63)  // 99
+#define SYSTEM_RESCHEDULE_IRQ (2)
+#define SYSTEM_HALT_IRQ (1)
+#define SYSTEM_SLEEP_IRQ (3)
+#define SYSTEM_UARTRX_IRQ (125)
+#define SYSTEM_SPOURIOUS_IRQ (1023)
 
 typedef struct {
   volatile unsigned int ctl;

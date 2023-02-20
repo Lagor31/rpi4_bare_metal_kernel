@@ -140,8 +140,14 @@ void buddy_set_optimal_fit(struct buddy *buddy);
 /* Implementation defined */
 // static void buddy_debug(FILE *stream, struct buddy *buddy);
 
-struct buddy_tree;
+// struct buddy_tree;
 
+struct buddy_tree {
+  size_t upper_pos_bound;
+  size_t size_for_order_offset;
+  uint8_t order;
+  size_t data[];
+};
 struct buddy_tree_pos {
   size_t index;
   size_t depth;

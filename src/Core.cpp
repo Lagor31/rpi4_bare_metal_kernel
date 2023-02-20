@@ -19,9 +19,8 @@ void Core::disableIRQ() { disable_irq(); }
 void Core::enableIRQ() { enable_irq(); }
 extern "C" void core_switch_to(core_context *prev, core_context *next,
                                CoreContext *);
-Spinlock *Core::scheduler;
+Spinlock *Core::scheduler[4];
 Task *Core::current[4];
-// Vector<Task *> *Core::runningQ[4];
 SinglyLinkedList<Task *> *Core::runningQ[4];
 SinglyLinkedList<Task *> *Core::sleepingQ[4];
 
@@ -34,22 +33,6 @@ void Core::printList(SinglyLinkedList<Task *> *l) {
 void Core::preemptDisable() { Core::current[get_core()]->c++; }
 void Core::preemptEnable() { Core::current[get_core()]->c--; }
 bool Core::isPreamptable() { return Core::current[get_core()]->c <= 0; }
-
-void Core::switchTo(Task *next) {
-  //Core::scheduler->getLock();
-  //preemptDisable();
-  Task *current = Core::current[get_core()];
-  if (current == next) {
-    //preemptEnable();
-    return;
-  }
-
-  Task *prev = current;
-  Core::current[get_core()] = next;
-  //Core::scheduler->release();
-  core_switch_to(&prev->second, &next->second, &prev->context);
-  //preemptEnable();
-}
 
 void Core::start(uint32_t core, void (*func)(void)) {
   if (core < 1 || core > 3) return;

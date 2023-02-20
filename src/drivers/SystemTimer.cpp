@@ -38,18 +38,13 @@ void SystemTimer::WaitMicroT3(uint32_t us) {
 }
 
 uint64_t SystemTimer::getCounter() {
-  // Core::preemptDisable();
-  //  lock->getLock();
   uint32_t lo = rpiSystemTimer->counter_lo;
   uint32_t hi = rpiSystemTimer->counter_hi;
   if (hi != rpiSystemTimer->counter_hi) {
     hi = rpiSystemTimer->counter_hi;
     lo = rpiSystemTimer->counter_lo;
   }
-  // lock->release();
-  // Core::preemptEnable();
-  uint64_t out = (hi << (static_cast<uint64_t>(16)));
-  out <<= 16;
+  uint64_t out = (hi << (static_cast<uint64_t>(32)));
   out += lo;
   return out;
 }

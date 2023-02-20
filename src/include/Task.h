@@ -1,8 +1,8 @@
 #ifndef TASK_H
 #define TASK_H
 #include <stdint.h>
-#include "IRQ.h"
 
+#include "IRQ.h"
 
 class Task {
  public:
@@ -23,5 +23,6 @@ class Task {
 
 void idleTask();
 void kernelTask();
-
+void topBarTask();
+void screenTask();
 #endif

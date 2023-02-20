@@ -12,10 +12,15 @@
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
 #include "include/Vector.h"
+#include "include/fb.h"
+#include "include/io.h"
 #include "include/sysregs.h"
 
 using SD::Lists::ArrayList;
 
+uint32_t x = 0;
+uint32_t y = 0;
+char car = 0;
 extern "C" void _enable_interrupts();
 extern "C" uint64_t get_far_el1();
 extern "C" uint64_t get_esr_el1();
@@ -38,124 +43,85 @@ void copyRegs(CoreContext *s, CoreContext *d) {
 }
 // Current EL with SPx
 extern "C" void irq_handler_spx(CoreContext *regs) {
-  // Console::print("In IRQH...\n");
   unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
   unsigned int irq = irq_ack_reg & 0x3FF;
   unsigned int cpu = (irq_ack_reg >> 10) & 7;
-  uint64_t core_activations_l[4];
-  // uint64_t c = core_activations[get_core()] % THREAD_N;
-  // Vector<Task *> *vnext = Core::runningQ[get_core()];
-  Core::scheduler->getLock();
+
+  char at;
+  Task *next;
+  uint64_t c;
+  at = Std::hash(SystemTimer::getTimer()->counter_lo) % 16;
+
+  /* Waking up sleeping Tasks
+    This is dangerous because we're doing memory alloc stuff (remove, insert)
+    without any protection from the interrupted Task
+  */
+
   for (int i = 0; i < Core::sleepingQ[get_core()]->count(); ++i) {
-    if (Core::sleepingQ[get_core()]->get(i)->timer <
-        SystemTimer::getCounter()) {
+    uint64_t cTimer = Core::sleepingQ[get_core()]->get(i)->timer;
+    if (cTimer != 0 && cTimer < SystemTimer::getCounter()) {
       Task *t = Core::sleepingQ[get_core()]->get(i);
-      /* t->context.lr += 4;
-      t->second.lr += 4;
-      t->context.elr_el1 += 4; */
-      // Console::print("Woken up %d from timer sleep\n", t->pid);
+      t->timer = 0;
       Core::sleepingQ[get_core()]->remove(i);
       Core::runningQ[get_core()]->insert(t);
     }
   }
-  uint64_t c = Std::hash(SystemTimer::getTimer()->compare0) %
-               Core::runningQ[get_core()]->count();
-  Task *next = Core::runningQ[get_core()]->get(c);
-  Core::scheduler->release();
+  c = Std::hash(SystemTimer::getTimer()->compare0) %
+      Core::runningQ[get_core()]->count();
+  next = Core::runningQ[get_core()]->get(c);
 
   switch (irq) {
-    case (125):
-      Console::print_no_lock("Uart int! %c\n", Console::getKernelConsole()->readChar());
+    case (SYSTEM_UARTRX_IRQ):
+      car = Console::getKernelConsole()->readChar();
+      Console::print_no_lock("Uart int! %d\n", car);
+      if (car == 13) {
+        y += 18;
+        x = 0;
+      }
+      if (at <= 1) at = 0xf;
+      if (drawChar(car, x, y, at)) {
+        x += 16;
+        if ((x + 16) > 1920) {
+          y += 18;
+          x = 0;
+        }
+      }
+
       MMIO::write(GICC_EOIR, irq);
 
       break;
     case (SYSTEM_TIMER_IRQ_1):
       MMIO::write(GICC_EOIR, irq);
-      sched_lock->getLock();
-      for (int i = 0; i < 4; ++i) core_activations_l[i] = core_activations[i];
-      sched_lock->release();
-      SystemTimer::WaitMicroT1(10000);
+      SystemTimer::WaitMicroT1(1000);  // 1ms
       SystemTimer::getTimer()->control_status |= 0b0010;
 
-      /*       if (((core_activations_l[0] % 10) == 0) && core_activations_l[0]
-         > 0 && core_activations_l[0] < 10000) { Task *t =
-         Task::createKernelTask((uint64_t)&kernelThread); uint32_t cpu =
-         SystemTimer::getTimer()->counter_lo % 4; Console::print(
-                  "####################\nAddint Task to "
-                  "Core%d\n####################\n",
-                  cpu);
-              Core::runningQ[cpu]->push_back(t);
-              // GIC400::send_sgi(2, cpu);
-            } */
+      /* We reschedule */
       if (Core::isPreamptable()) {
-        // Core::scheduler->getLock();
-        //  Console::print("Kernel SP: 0x%x\n", get_sp());
         copyRegs(regs, &Core::current[get_core()]->context);
         copyRegs(&next->context, regs);
-        /* Console::print("IRQ Switching %d to PID %d\n",
-                       Core::current[get_core()]->pid, next->pid); */
         Core::current[get_core()] = next;
         if (next->context.elr_el1 < 0xFFFF000000000000) {
           Console::print_no_lock("Returning to wrong address 0x%x\n",
                                  next->context.elr_el1);
           _hang_forever();
         }
-        // sched_lock->getLock();
-        core_activations[get_core()]++;
-        // sched_lock->release();
-        // Core::scheduler->release();
       }
-      GIC400::send_sgi(2, 1);
-      GIC400::send_sgi(2, 2);
-      GIC400::send_sgi(2, 3);
+      /* We tell other cores to reschedule */
+      GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 1);
+      GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 2);
+      GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 3);
       break;
 
+    /*
     case (SYSTEM_TIMER_IRQ_3):
       MMIO::write(GICC_EOIR, irq);
-      sched_lock->getLock();
-      for (int i = 0; i < 4; ++i) core_activations_l[i] = core_activations[i];
-      sched_lock->release();
-
-      /*  Console::print(
-           "\nTimer IRQ 3\n\tCore%d IRQ: %d From: Core%d\n"
-           "\tC0: %u C1:%u C2:%u C3:%u\n",
-           get_core(), irq, cpu, core_activations_l[0], core_activations_l[1],
-           core_activations_l[2], core_activations_l[3]);
-  */
       SystemTimer::getTimer()->control_status |= 0b1000;
-      SystemTimer::WaitMicroT3(40000);
-      // core_activations[get_core()]++;
-
-      /*  if (Core::isPreamptable()) {
-         // Console::print("Kernel SP: 0x%x\n", get_sp());
-
-         copyRegs(regs, &Core::current[get_core()]->context);
-         copyRegs(&vnext[c]->context, regs);
-         Core::current[get_core()] = vnext[c];
-         if (vnext[c]->context.elr_el1 < 0xFFFF000000000000) {
-           Console::print("Returning to wrong address 0x%x\n",
-                          vnext[c]->context.elr_el1);
-           _hang_forever();
-         }
-       } */
-      if (Core::isPreamptable()) {
-        // Core::scheduler->getLock();
-        //  Console::print("Kernel SP: 0x%x\n", get_sp());
-        copyRegs(regs, &Core::current[get_core()]->context);
-        copyRegs(&next->context, regs);
-        Core::current[get_core()] = next;
-        if (next->context.elr_el1 < 0xFFFF000000000000) {
-          Console::print_no_lock("Returning to wrong address 0x%x\n",
-                                 next->context.elr_el1);
-          _hang_forever();
-        }
-        // sched_lock->getLock();
-        core_activations[get_core()]++;
-        // sched_lock->release();
-        // Core::scheduler->release();
-      }
+      SystemTimer::WaitMicroT3(1600000);
       break;
-    case 2:
+    */
+
+    /* We were told by Core0 to reschedule */
+    case SYSTEM_RESCHEDULE_IRQ:
       MMIO::write(GICC_EOIR, irq);
       if (Core::isPreamptable()) {
         // Core::scheduler->getLock();
@@ -170,41 +136,30 @@ extern "C" void irq_handler_spx(CoreContext *regs) {
                                  next->context.elr_el1);
           _hang_forever();
         }
-        // sched_lock->getLock();
-        core_activations[get_core()]++;
-        // sched_lock->release();
-        // Core::scheduler->release();
       }
-
       break;
-    case 3:
-      /* Console::print("IRQ Running List:\n");
-      Core::printList(Core::runningQ[get_core()]);
 
-      Console::print("IRQ Sleeping List:\n");
-      Core::printList(Core::sleepingQ[get_core()]); */
+    /* Core0 told us to sleep */
+    case SYSTEM_SLEEP_IRQ:
       MMIO::write(GICC_EOIR, irq);
-      Core::scheduler->getLock();
-
+      Core::scheduler[get_core()]->getLock();
+      /* Putting current to sleep */
       for (int i = 0; i < Core::runningQ[get_core()]->count(); ++i) {
         if (Core::current[get_core()]->pid ==
             Core::runningQ[get_core()]->get(i)->pid) {
           Task *t = Core::runningQ[get_core()]->get(i);
-          t->timer = SystemTimer::getCounter() + (5000 * 1000);
+          t->timer = SystemTimer::getCounter() + (t->timer * 1000);
           Core::runningQ[get_core()]->remove(i);
           Core::sleepingQ[get_core()]->insert(t);
-          // Console::print("Task %d went to sleep!\n", t->pid);
         }
       }
+      /* Choosing next and scheduling it*/
       c = Std::hash(SystemTimer::getTimer()->compare0) %
           Core::runningQ[get_core()]->count();
       next = Core::runningQ[get_core()]->get(c);
-      Core::scheduler->release();
+      Core::scheduler[get_core()]->release();
 
       if (Core::isPreamptable()) {
-        // Core::scheduler->getLock();
-
-        // Console::print("Kernel SP: 0x%x\n", get_sp());
         copyRegs(regs, &Core::current[get_core()]->context);
         copyRegs(&next->context, regs);
         Core::current[get_core()] = next;
@@ -215,25 +170,19 @@ extern "C" void irq_handler_spx(CoreContext *regs) {
         }
       }
       break;
-    case 1:
-      // Console::print_no_lock("Halting Core%d immediately!\n", get_core());
+
+    /* Halt core */
+    case SYSTEM_HALT_IRQ:
       _hang_forever();
-    case 1023:
-      // Console::print("SPOURIOUS INT RECEIVED Core%d: %x\r\n", get_core(),
-      // irq);
+
+    /* Spourius interrupts */
+    case SYSTEM_SPOURIOUS_IRQ:
+      Console::print_no_lock("SPOURIOUS INT RECEIVED Core%d: %x\r\n",
+                             get_core(), irq);
       MMIO::write(GICC_EOIR, irq);
       break;
     default:
       MMIO::write(GICC_EOIR, irq);
-      sched_lock->getLock();
-      for (int i = 0; i < 4; ++i) core_activations_l[i] = core_activations[i];
-      sched_lock->release();
-      /*  Console::print(
-           "Received IRQ Exception\n\tCore%d IRQ: %d From: Core%d\n"
-           "\tC0: %u C1:%u C2:%u C3:%u\n",
-           get_core(), irq, cpu, core_activations_l[0],
-         core_activations_l[1], core_activations_l[2],
-         core_activations_l[3]); */
       break;
   }
 }
@@ -252,6 +201,8 @@ void printRegs(CoreContext *regs) {
   Console::print_no_lock(
       "SPSR=%x\nELR=%x\nESR=%x\nLR=%x\nSP_EL0=%x\nFAR_EL1=%x\n", regs->sprs_el1,
       regs->elr_el1, regs->esr_el1, regs->lr, regs->sp_el0, regs->far_el1);
+
+  Console::print_no_lock("Current PID: %d\n", Core::current[get_core()]->pid);
 }
 
 extern "C" void sync_handler_sp0(CoreContext *regs) {

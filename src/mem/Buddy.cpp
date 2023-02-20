@@ -1,3 +1,4 @@
+#include "../include/Core.h"
 #include "../include/buddy_alloc.h"
 
 size_t buddy_sizeof(size_t memory_size) {
@@ -176,6 +177,7 @@ static size_t buddy_tree_order_for_memory(size_t memory_size) {
 }
 
 void *buddy_malloc(struct buddy *buddy, size_t requested_size) {
+  // Console::print_no_lock("Buddy Alloc %d!\n");
   if (buddy == NULL) {
     return NULL;
   }
@@ -206,7 +208,7 @@ void *buddy_malloc(struct buddy *buddy, size_t requested_size) {
 
   /* Allocate the slot */
   buddy_tree_mark(tree, pos);
-  buddy->free -= requested_size;
+  // buddy->free -= (4096 << tree->order);
   /* Find and return the actual memory address */
   return address_for_position(buddy, pos);
 }
@@ -306,14 +308,17 @@ void *buddy_reallocarray(struct buddy *buddy, void *ptr, size_t members_count,
 
 void buddy_free(struct buddy *buddy, void *ptr) {
   if (buddy == NULL) {
+    Core::panic("Wrong buddy free!\n");
     return;
   }
   if (ptr == NULL) {
+    Core::panic("Wrong buddy free!\n");
     return;
   }
   unsigned char *dst = (unsigned char *)ptr;
   unsigned char *main = buddy_main(buddy);
   if ((dst < main) || (dst >= (main + buddy->memory_size))) {
+    Core::panic("Wrong buddy free!\n");
     return;
   }
 
@@ -322,9 +327,13 @@ void buddy_free(struct buddy *buddy, void *ptr) {
   struct buddy_tree_pos pos = position_for_address(buddy, dst);
 
   if (!buddy_tree_valid(tree, pos)) {
+    Core::panic("Wrong buddy free!\n");
     return;
   }
   /* Release the position */
+  // Console::print_no_lock("Buddy Free %d!\n", (4096 << tree->order));
+  // buddy->free += (4096 << tree->order);
+
   buddy_tree_release(tree, pos);
 }
 
@@ -359,6 +368,8 @@ void buddy_safe_free(struct buddy *buddy, void *ptr, size_t requested_size) {
   if (requested_size <= (allocated_size_for_depth / 2)) {
     return;
   }
+
+  // buddy->free += (4096 << tree->order);
 
   /* Release the position */
   buddy_tree_release(tree, pos);
@@ -699,12 +710,12 @@ static unsigned int buddy_is_left_biased(struct buddy *buddy) {
  * A buddy allocation tree
  */
 
-struct buddy_tree {
+/* struct buddy_tree {
   size_t upper_pos_bound;
   size_t size_for_order_offset;
   uint8_t order;
   size_t data[];
-};
+}; */
 
 struct internal_position {
   size_t local_offset;
@@ -1074,7 +1085,6 @@ static size_t buddy_tree_status(struct buddy_tree *t,
 static void buddy_tree_mark(struct buddy_tree *t, struct buddy_tree_pos pos) {
   /* Calling mark on a used position is a bug in caller */
   struct internal_position internal = buddy_tree_internal_position_tree(t, pos);
-
   /* Mark the node as used */
   write_to_internal_position(buddy_tree_bits(t), internal,
                              internal.local_offset);
@@ -1294,7 +1304,7 @@ static unsigned int buddy_tree_check_invariant(struct buddy_tree *t,
 /* static float buddy_tree_fragmentation(struct buddy_tree *t) {
   uint8_t tree_order = buddy_tree_order(t);
   size_t root_status = buddy_tree_status(t, buddy_tree_root());
-  if (root_status == 0) { 
+  if (root_status == 0) {
     return 0;
   }
 

@@ -18,31 +18,23 @@ KernelHeapAllocator::KernelHeapAllocator(unsigned char *s, unsigned char *e) {
                      (unsigned char *)buddy_arena, arena_size);
 };
 
-unsigned long KernelHeapAllocator::freeSpace() { return bytes_left; }
+unsigned long KernelHeapAllocator::freeSpace() {
+  return buddy_arena_size(buddy);
+}
 
 void *KernelHeapAllocator::alloc(unsigned size) {
   if (size > bytes_left) Core::panic("FInished memory in simple allocator!\n");
 
   l.getLock();
   void *out;
-  // = ptr;
-
-  /*   ptr += size;
-    bool isNotAligned = (uint64_t)ptr & 0x00000FFF;
-    if (isNotAligned) {
-      ptr = (unsigned char *)((uint64_t)ptr & 0xFFFFFFFFFFFFF000);
-      ptr += 0x1000;
-    }
-
-    bytes_left -= ((uint64_t)ptr - (uint64_t)out);
-    l.release(); */
-
   out = buddy_malloc(buddy, size);
   l.release();
 
   if (out == NULL) Core::panic("Buddy out of memory!\n");
+  bytes_left -= size;
   /* Console::print("Alloc out=0x%x ptr=%x for size=%d ESize=0x%x\n", out,
      ptr, size, effectiveSize); */
+
   return out;
 };
 void KernelHeapAllocator::free(void *p) {
