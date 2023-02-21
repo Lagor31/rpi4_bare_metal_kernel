@@ -17,7 +17,7 @@ class Task {
   uint64_t flags;
   static Task *createKernelTask(uint64_t entryPoint);
   static uint64_t freePID;
-  uint64_t timer;
+  uint32_t timer;
   void sleep(uint32_t);
 };
 

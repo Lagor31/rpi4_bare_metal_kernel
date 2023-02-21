@@ -32,25 +32,19 @@ void topBarTask() {
 
     at = tAt;
     uint64_t sp = get_sp();
-    char *hText = "FedeFede";
+    char* hText = "FedeFede";
     Core::disableIRQ();
     for (int i = 0; i < 8; ++i) {
       drawChar(hText[i], i * 16 + 800, 0, at);
     }
     Core::enableIRQ();
-    for (int i = 0; i < 4; ++i) {
-      Console::print("#################\nCore%d\n", i);
-      Console::print("RunninQ Core%d: %d\n", i, Core::runningQ[i]->count());
-      Console::print("SleepingQ Core%d: %d\n", i, Core::sleepingQ[i]->count());
-    }
-    Console::print("\n\n");
     Core::current[core]->sleep(1000);
   }
   _hang_forever();
 }
 
 void screenTask() {
-  Circle *drawMe;
+  Circle* drawMe;
   int y = 0;
   bool dir = 0;
   uint32_t c = 0;
@@ -67,7 +61,7 @@ void screenTask() {
 
       Core::preemptDisable();
       drawCircle(drawMe->x, drawMe->y, drawMe->radius, drawMe->attr,
-                 drawMe->fill);
+        drawMe->fill);
       Core::disableIRQ();
       delete drawMe;
       Core::enableIRQ();
@@ -109,12 +103,12 @@ void kernelTask() {
     uint64_t sp = get_sp();
     // Core::preemptDisable();
     Core::current[core]->sleep(2000 +
-                               Std::hash(SystemTimer::getCounter()) % 1000);
+      Std::hash(SystemTimer::getCounter()) % 1000);
     /* Console::print(
         "\nKernel thread #%d on Core%d PID: %d!\nSP: %x Free: %d Count: %d\n",
         Core::current[core]->pid, core, pid, sp,
        GlobalKernelAlloc::freeSpace(), count++); */
-    // for (int i = 0; i < 100; ++i) Std::hash(i);
+       // for (int i = 0; i < 100; ++i) Std::hash(i);
     uint32_t x = Std::hash(SystemTimer::getCounter()) % (1920);
     uint32_t y = Std::hash(SystemTimer::getCounter()) % (1080) + 32;
 
@@ -122,7 +116,7 @@ void kernelTask() {
     uint8_t attr = Std::hash(SystemTimer::getCounter()) % 255 + 16;
     uint32_t filled = Std::hash(SystemTimer::getCounter()) % 2;
     Core::disableIRQ();
-    Circle *paintMe = (Circle *)GlobalKernelAlloc::alloc(sizeof(Circle));
+    Circle* paintMe = (Circle*)GlobalKernelAlloc::alloc(sizeof(Circle));
     Core::enableIRQ();
 
     paintMe->x = x;
@@ -149,8 +143,8 @@ uint64_t Task::freePID = 1;
 
 Task::Task() { c = 0; }
 
-Task *Task::createKernelTask(uint64_t entryPoint) {
-  Task *out = new Task();
+Task* Task::createKernelTask(uint64_t entryPoint) {
+  Task* out = new Task();
   out->context.lr = entryPoint;
   out->second.lr = entryPoint;
   out->context.elr_el1 = entryPoint;
