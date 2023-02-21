@@ -92,7 +92,7 @@ extern "C" void irq_handler_spx(CoreContext *regs) {
       break;
     case (SYSTEM_TIMER_IRQ_1):
       MMIO::write(GICC_EOIR, irq);
-      SystemTimer::WaitMicroT1(1000);  // 1ms
+      SystemTimer::WaitMicroT1(2000);  // 2ms
       SystemTimer::getTimer()->control_status |= 0b0010;
 
       /* We reschedule */

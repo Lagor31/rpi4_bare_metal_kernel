@@ -38,7 +38,12 @@ void topBarTask() {
       drawChar(hText[i], i * 16 + 800, 0, at);
     }
     Core::enableIRQ();
-    Console::print("Free Mem: %d\n", GlobalKernelAlloc::freeSpace());
+    for (int i = 0; i < 4; ++i) {
+      Console::print("#################\nCore%d\n", i);
+      Console::print("RunninQ Core%d: %d\n", i, Core::runningQ[i]->count());
+      Console::print("SleepingQ Core%d: %d\n", i, Core::sleepingQ[i]->count());
+    }
+    Console::print("\n\n");
     Core::current[core]->sleep(1000);
   }
   _hang_forever();

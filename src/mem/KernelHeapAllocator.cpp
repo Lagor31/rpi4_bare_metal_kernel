@@ -23,7 +23,8 @@ unsigned long KernelHeapAllocator::freeSpace() {
 }
 
 void *KernelHeapAllocator::alloc(unsigned size) {
-  if (size > bytes_left) Core::panic("FInished memory in simple allocator!\n");
+  // if (size > bytes_left) Core::panic("FInished memory in simple
+  // allocator!\n");
 
   l.getLock();
   void *out;
