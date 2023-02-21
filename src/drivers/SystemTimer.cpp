@@ -29,21 +29,34 @@ Spinlock* SystemTimer::lock;
 SystemTimer::SystemTimer() {}
 
 void SystemTimer::WaitMicroT1(uint32_t us) {
-  uint32_t lo = rpiSystemTimer->counter_lo;
-  rpiSystemTimer->compare1 = (lo + us) % 0xFFFFFFFF;
+  uint32_t lo;
+  uint32_t hi;
+  do {
+    lo = rpiSystemTimer->counter_lo;
+    hi = rpiSystemTimer->counter_hi;
+  } while (hi != rpiSystemTimer->counter_hi);
+
+  rpiSystemTimer->compare1 = (lo + us);
 }
 
 void SystemTimer::WaitMicroT3(uint32_t us) {
-  rpiSystemTimer->compare3 = (rpiSystemTimer->counter_lo + us) % 0xFFFFFFFF;
+  uint32_t lo;
+  uint32_t hi;
+  do {
+    lo = rpiSystemTimer->counter_lo;
+    hi = rpiSystemTimer->counter_hi;
+  } while (hi != rpiSystemTimer->counter_hi);
+  rpiSystemTimer->compare3 = (lo + us);
 }
 
 uint64_t SystemTimer::getCounter() {
-  uint32_t lo = rpiSystemTimer->counter_lo;
-  uint32_t hi = rpiSystemTimer->counter_hi;
-  if (hi != rpiSystemTimer->counter_hi) {
-    hi = rpiSystemTimer->counter_hi;
+  uint32_t lo;
+  uint32_t hi;
+  do {
     lo = rpiSystemTimer->counter_lo;
-  }
+    hi = rpiSystemTimer->counter_hi;
+  } while (hi != rpiSystemTimer->counter_hi);
+
   uint64_t out = (hi << (static_cast<uint64_t>(32)));
   out += lo;
   return out;
