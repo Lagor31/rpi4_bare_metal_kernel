@@ -20,15 +20,34 @@ extern "C" unsigned int get_core();
 void idleTask() { _hang_forever(); }
 
 void topBarTask() {
-  uint32_t core = get_core();
-  uint64_t pid = Core::current[core]->pid;
+
   uint64_t count = 0;
   uint8_t at = 0xF;
   uint8_t tAt = 0xF;
   while (true) {
-    do {
-      tAt = Std::hash(SystemTimer::getCounter()) % 16;
-    } while (tAt == at);
+    uint32_t core = get_core();
+    uint64_t pid = Core::current[core]->pid;
+    switch (core) {
+    case 0:
+      tAt = 0xFF;
+      break;
+    case 1:
+      tAt = 0xCC;
+      break;
+    case 2:
+      tAt = 0xBB;
+      break;
+    case 3:
+      tAt = 0xDD;
+      break;
+    default:
+      Core::panic("Wrong CPU!!!!\n");
+    }
+
+    /*  do {
+       tAt = Std::hash(SystemTimer::getCounter()) % 16;
+     } while (tAt == at); */
+    Console::print("TopBAR form PID=%d On Core=%d!\n", pid, core);
 
     at = tAt;
     uint64_t sp = get_sp();
@@ -96,10 +115,10 @@ void screenTask() {
   }
 }
 void kernelTask() {
-  uint32_t core = get_core();
-  uint64_t pid = Core::current[core]->pid;
   uint64_t count = 0;
   while (true) {
+    uint32_t core = get_core();
+    uint64_t pid = Core::current[core]->pid;
     uint64_t sp = get_sp();
     // Core::preemptDisable();
     Core::current[core]->sleep(2000 +
@@ -121,14 +140,26 @@ void kernelTask() {
 
     paintMe->x = x;
     paintMe->y = y;
-    if ((Std::hash(SystemTimer::getCounter()) % 20) == 0)
-      paintMe->attr = 0xCC;
-    else
+
+    switch (core) {
+    case 0:
       paintMe->attr = 0xFF;
-    attr = Std::hash(SystemTimer::getCounter()) % 256;
+      break;
+    case 1:
+      paintMe->attr = 0xCC;
+      break;
+    case 2:
+      paintMe->attr = 0xBB;
+      break;
+    case 3:
+      paintMe->attr = 0xDD;
+      break;
+    default:
+      Core::panic("Wrong CPU!!!!\n");
+    }
     paintMe->fill = 1;
     paintMe->radius = radius;
-    // Console::print("Printing Circle form PID=%d On Core=%d!\n", pid, core);
+    //Console::print("Printing Circle form PID=%d On Core=%d!\n", pid, core);
     paintCircle(paintMe);
   }
   _hang_forever();

@@ -24,13 +24,13 @@ enum {
 };
 
 void mmio_write(long reg, unsigned int val) {
-  *(volatile unsigned int *)reg = val;
+  *(volatile unsigned int*)reg = val;
 }
-unsigned int mmio_read(long reg) { return *(volatile unsigned int *)reg; }
+unsigned int mmio_read(long reg) { return *(volatile unsigned int*)reg; }
 
 unsigned int gpio_call(unsigned int pin_number, unsigned int value,
-                       unsigned int base, unsigned int field_size,
-                       unsigned int field_max) {
+  unsigned int base, unsigned int field_size,
+  unsigned int field_max) {
   unsigned int field_mask = (1 << field_size) - 1;
 
   if (pin_number > field_max) return 0;
@@ -79,7 +79,8 @@ void gpio_initOutputPinWithPullNone(unsigned int pin_number) {
 void gpio_setPinOutputBool(unsigned int pin_number, unsigned int onOrOff) {
   if (onOrOff) {
     gpio_set(pin_number, 1);
-  } else {
+  }
+  else {
     gpio_clear(pin_number, 1);
   }
 }
@@ -150,13 +151,13 @@ void uart_loadOutputFifo() {
   while (!uart_isOutputQueueEmpty() && uart_isWriteByteReady()) {
     uart_writeByteBlockingActual(uart_output_queue[uart_output_queue_read]);
     uart_output_queue_read =
-        (uart_output_queue_read + 1) & (UART_MAX_QUEUE - 1);  // Don't overrun
+      (uart_output_queue_read + 1) & (UART_MAX_QUEUE - 1);  // Don't overrun
   }
 }
 
 void uart_writeByteBlocking(unsigned char ch) {
   unsigned int next =
-      (uart_output_queue_write + 1) & (UART_MAX_QUEUE - 1);  // Don't overrun
+    (uart_output_queue_write + 1) & (UART_MAX_QUEUE - 1);  // Don't overrun
 
   while (next == uart_output_queue_read) uart_loadOutputFifo();
 
@@ -164,7 +165,7 @@ void uart_writeByteBlocking(unsigned char ch) {
   uart_output_queue_write = next;
 }
 
-void uart_writeText(char *buffer) {
+void uart_writeText(char* buffer) {
   while (*buffer) {
     if (*buffer == '\n') uart_writeByteBlocking('\r');
     uart_writeByteBlocking(*buffer++);

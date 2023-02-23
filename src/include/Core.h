@@ -8,23 +8,26 @@
 #include "Task.h"
 using SD::Lists::SinglyLinkedList;
 
-#define THREAD_N 5
+#define THREAD_N 20
 
 class Core {
- public:
+public:
   static void spinms(uint32_t);
   static void start(uint32_t core, void (*func)(void));
   static void disableIRQ();
   static void enableIRQ();
-  static void panic(const char *s);
-  static Task *current[4];
-  static void printList(SinglyLinkedList<Task *> *l);
+  static void panic(const char* s);
+  static Task* current[4];
+  static void printList(SinglyLinkedList<Task*>* l);
 
-  static Spinlock *scheduler[4];
+  static Spinlock* runningQLock[4];
+  static Spinlock* sleepingQLock;
+
   // static Vector<Task*> *runningQ[4];
+
   // static Task *runningQ[4][THREAD_N];
-  static SinglyLinkedList<Task *> *runningQ[4];
-  static SinglyLinkedList<Task *> *sleepingQ[4];
+  static SinglyLinkedList<Task*>* runningQ[4];
+  static SinglyLinkedList<Task*>* sleepingQ;
   static void preemptDisable();
   static void preemptEnable();
   static bool isPreamptable();

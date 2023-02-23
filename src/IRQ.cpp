@@ -28,6 +28,7 @@ extern "C" uint64_t get_elr_el1();
 extern void kernelThread();
 extern "C" uint64_t get_sp();
 
+uint32_t nextCore = 0;
 Spinlock* sched_lock;
 void initSchedLock() { sched_lock = new Spinlock(); }
 uint64_t core_activations[4] = { 0 };
@@ -43,9 +44,27 @@ void copyRegs(CoreContext* s, CoreContext* d)
   d->sprs_el1 = s->sprs_el1;
   d->sp_el0 = s->sp_el0;
 }
+
+uint32_t calcNextCore() {
+  //return (++cc % 4);
+  //return Std::hash(SystemTimer::getTimer()->counter_lo) % 4;
+
+  int outCore = 0;
+  uint32_t count = 0xfffffff;
+
+  for (int i = 0; i < 4; ++i) {
+    Core::runningQLock[i]->getLock();
+
+    if (Core::runningQ[i]->count() <= count) {
+      count = Core::runningQ[i]->count();
+      outCore = i;
+    }
+    Core::runningQLock[i]->release();
+  }
+  return outCore;
+}
 // Current EL with SPx
-extern "C" void irq_handler_spx(CoreContext * regs)
-{
+extern "C" void irq_handler_spx(CoreContext * regs) {
   unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
   unsigned int irq = irq_ack_reg & 0x3FF;
   unsigned int cpu = (irq_ack_reg >> 10) & 7;
@@ -54,28 +73,41 @@ extern "C" void irq_handler_spx(CoreContext * regs)
   Task* next;
   uint64_t c;
   at = Std::hash(SystemTimer::getTimer()->counter_lo) % 16;
+  Task* goingToSleep = nullptr;
+  uint32_t index = 0;
+  uint32_t remCount = 0;
+  rpi_sys_timer_t* timer;
 
-  /* Waking up sleeping Tasks
+
+  /*
+    Waking up sleeping Tasks
     This is dangerous because we're doing memory alloc stuff (remove, insert)
     without any protection from the interrupted Task
   */
+  Core::sleepingQLock->getLock();
 
-  for (int i = 0; i < Core::sleepingQ[get_core()]->count(); ++i) {
-    uint64_t cTimer = Core::sleepingQ[get_core()]->get(i)->timer;
+  for (int i = 0; i < Core::sleepingQ->count(); ++i) {
+    uint64_t cTimer = Core::sleepingQ->get(i)->timer;
     if (cTimer != 0 && cTimer <= SystemTimer::getTimer()->counter_lo) {
-      Task* t = Core::sleepingQ[get_core()]->get(i);
+      Task* t = Core::sleepingQ->get(i);
       t->timer = 0;
-      Core::sleepingQ[get_core()]->remove(i);
-      Core::runningQ[get_core()]->insert(t);
+      //uint32_t nextCore = get_core();
+      //while ((++nextCore % 4) == get_core());
+      nextCore = calcNextCore();
+      //Console::print_no_lock("PID %d to Core%d\n", t->pid, nextCore);
+      Core::runningQLock[nextCore]->getLock();
+      Core::runningQ[nextCore]->insert(t);
+      Core::sleepingQ->remove(i);
+      Core::runningQLock[nextCore]->release();
+      goto _end_sleep;
     }
-  }
 
-  c = Std::hash(SystemTimer::getTimer()->compare0) %
-    Core::runningQ[get_core()]->count();
-  next = Core::runningQ[get_core()]->get(c);
-  rpi_sys_timer_t* timer;
-  switch (irq)
-  {
+  }
+_end_sleep:
+  Core::sleepingQLock->release();
+
+
+  switch (irq) {
   case (SYSTEM_UARTRX_IRQ):
     car = Console::getKernelConsole()->readChar();
     //Console::print_no_lock("Uart int! %d\n", car);
@@ -95,11 +127,13 @@ extern "C" void irq_handler_spx(CoreContext * regs)
         x = 0;
       }
     } */
+    Console::print_no_lock("\n\n");
     for (int i = 0; i < 4; ++i) {
       Console::print_no_lock("#################\nCore%d\n", i);
       Console::print_no_lock("RunninQ Core%d: %d\n", i, Core::runningQ[i]->count());
-      Console::print_no_lock("SleepingQ Core%d: %d\n", i, Core::sleepingQ[i]->count());
     }
+    Console::print_no_lock("SleepingQ: %d\n\n", Core::sleepingQ->count());
+    Console::print_no_lock("\n\n");
     timer = SystemTimer::getTimer();
     Console::print_no_lock("System Timer Counter: %x\n", SystemTimer::getCounter());
     Console::print_no_lock("System Timer Lo: %x\n", timer->counter_lo);
@@ -117,13 +151,20 @@ extern "C" void irq_handler_spx(CoreContext * regs)
     SystemTimer::getTimer()->control_status |= 0b0010;
 
     /* We reschedule */
-    if (Core::isPreamptable())
-    {
+    if (Core::isPreamptable()) {
+
+      Core::runningQLock[get_core()]->getLock();
+
+      c = Std::hash(SystemTimer::getTimer()->counter_lo) %
+        Core::runningQ[get_core()]->count();
+      next = Core::runningQ[get_core()]->get(c);
+
+      Core::runningQLock[get_core()]->release();
+
       copyRegs(regs, &Core::current[get_core()]->context);
       copyRegs(&next->context, regs);
       Core::current[get_core()] = next;
-      if (next->context.elr_el1 < 0xFFFF000000000000)
-      {
+      if (next->context.elr_el1 < 0xFFFF000000000000) {
         Console::print_no_lock("Returning to wrong address 0x%x\n",
           next->context.elr_el1);
         _hang_forever();
@@ -135,19 +176,18 @@ extern "C" void irq_handler_spx(CoreContext * regs)
     GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 3);
     break;
 
-    /*
-    case (SYSTEM_TIMER_IRQ_3):
-      MMIO::write(GICC_EOIR, irq);
-      SystemTimer::getTimer()->control_status |= 0b1000;
-      SystemTimer::WaitMicroT3(1600000);
-      break;
-    */
-
     /* We were told by Core0 to reschedule */
   case SYSTEM_RESCHEDULE_IRQ:
     MMIO::write(GICC_EOIR, irq);
-    if (Core::isPreamptable())
-    {
+    if (Core::isPreamptable()) {
+
+      Core::runningQLock[get_core()]->getLock();
+
+      c = Std::hash(SystemTimer::getTimer()->counter_lo) %
+        Core::runningQ[get_core()]->count();
+      next = Core::runningQ[get_core()]->get(c);
+
+      Core::runningQLock[get_core()]->release();
       // Core::scheduler->getLock();
       //  Console::print("Kernel SP: 0x%x\n", get_sp());
       copyRegs(regs, &Core::current[get_core()]->context);
@@ -155,8 +195,7 @@ extern "C" void irq_handler_spx(CoreContext * regs)
       /* Console::print("IRQ Switching %d to PID %d\n",
                      Core::current[get_core()]->pid, next->pid); */
       Core::current[get_core()] = next;
-      if (next->context.elr_el1 < 0xFFFF000000000000)
-      {
+      if (next->context.elr_el1 < 0xFFFF000000000000) {
         Console::print_no_lock("Returning to wrong address 0x%x\n",
           next->context.elr_el1);
         _hang_forever();
@@ -164,17 +203,19 @@ extern "C" void irq_handler_spx(CoreContext * regs)
     }
     break;
 
-    /* Core0 told us to sleep */
+    /* We're told to sleep */
   case SYSTEM_SLEEP_IRQ:
     MMIO::write(GICC_EOIR, irq);
-    Core::scheduler[get_core()]->getLock();
+    if (!Core::isPreamptable())
+      break;
+
+    goingToSleep = nullptr;
+    Core::runningQLock[get_core()]->getLock();
     /* Putting current to sleep */
-    for (int i = 0; i < Core::runningQ[get_core()]->count(); ++i)
-    {
+    for (int i = 0; i < Core::runningQ[get_core()]->count(); ++i) {
       if (Core::current[get_core()]->pid ==
-        Core::runningQ[get_core()]->get(i)->pid)
-      {
-        Task* t = Core::runningQ[get_core()]->get(i);
+        Core::runningQ[get_core()]->get(i)->pid) {
+        goingToSleep = Core::runningQ[get_core()]->get(i);
         timer = SystemTimer::getTimer();
         uint32_t lo;
         uint32_t hi;
@@ -184,29 +225,34 @@ extern "C" void irq_handler_spx(CoreContext * regs)
           hi = timer->counter_hi;
         } while (hi != timer->counter_hi);
 
-        t->timer = lo + t->timer * (uint32_t)1000;
+        goingToSleep->timer = lo + goingToSleep->timer * (uint32_t)1000;
         Core::runningQ[get_core()]->remove(i);
-        Core::sleepingQ[get_core()]->insert(t);
+        break;
       }
     }
-    /* Choosing next and scheduling it*/
-    c = Std::hash(SystemTimer::getTimer()->compare0) %
+
+    c = Std::hash(SystemTimer::getTimer()->counter_lo) %
       Core::runningQ[get_core()]->count();
     next = Core::runningQ[get_core()]->get(c);
-    Core::scheduler[get_core()]->release();
+    Core::runningQLock[get_core()]->release();
 
-    if (Core::isPreamptable())
-    {
-      copyRegs(regs, &Core::current[get_core()]->context);
-      copyRegs(&next->context, regs);
-      Core::current[get_core()] = next;
-      if (next->context.elr_el1 < 0xFFFF000000000000)
-      {
-        Console::print_no_lock("Returning to wrong address 0x%x\n",
-          next->context.elr_el1);
-        _hang_forever();
-      }
+
+    if (goingToSleep != nullptr) {
+      Core::sleepingQLock->getLock();
+      Core::sleepingQ->insert(goingToSleep);
+      Core::sleepingQLock->release();
     }
+
+    copyRegs(regs, &Core::current[get_core()]->context);
+    copyRegs(&next->context, regs);
+    Core::current[get_core()] = next;
+    if (next->context.elr_el1 < 0xFFFF000000000000) {
+      Console::print_no_lock("Returning to wrong address 0x%x\n",
+        next->context.elr_el1);
+      _hang_forever();
+    }
+
+
     break;
 
     /* Halt core */

@@ -17,19 +17,19 @@ extern "C" uint64_t get_elr_el1();
 
 void Core::disableIRQ() { disable_irq(); }
 void Core::enableIRQ() { enable_irq(); }
-extern "C" void core_switch_to(core_context *prev, core_context *next,
-                               CoreContext *);
-Spinlock *Core::scheduler[4];
-Task *Core::current[4];
-SinglyLinkedList<Task *> *Core::runningQ[4];
-SinglyLinkedList<Task *> *Core::sleepingQ[4];
 
-void Core::printList(SinglyLinkedList<Task *> *l) {
+Spinlock* Core::runningQLock[4];
+Spinlock* Core::sleepingQLock;
+
+Task* Core::current[4];
+SinglyLinkedList<Task*>* Core::runningQ[4];
+SinglyLinkedList<Task*>* Core::sleepingQ;
+
+void Core::printList(SinglyLinkedList<Task*>* l) {
   for (int i = 0; i < l->count(); ++i) {
     Console::print("PID: %d\n", l->get(i)->pid);
   }
 }
-// Task *Core::runningQ[4][THREAD_N];
 void Core::preemptDisable() { Core::current[get_core()]->c++; }
 void Core::preemptEnable() { Core::current[get_core()]->c--; }
 bool Core::isPreamptable() { return Core::current[get_core()]->c <= 0; }
@@ -38,25 +38,25 @@ void Core::start(uint32_t core, void (*func)(void)) {
   if (core < 1 || core > 3) return;
 
   switch (core) {
-    case 1:
-      store64((unsigned long)0xffff0000000000E0, (unsigned long)func);
-      asm volatile("dc civac, %0" : : "r"(0xffff0000000000E0) : "memory");
-      asm volatile("sev");
-      break;
-    case 2:
-      store64((unsigned long)0xffff0000000000E8, (unsigned long)func);
-      asm volatile("dc civac, %0" : : "r"(0xffff0000000000E8) : "memory");
-      asm volatile("sev");
-      break;
-    case 3:
-      store64((unsigned long)0xffff0000000000F0, (unsigned long)func);
-      asm volatile("dc civac, %0" : : "r"(0xffff0000000000F0) : "memory");
-      asm volatile("sev");
-      break;
+  case 1:
+    store64((unsigned long)0xffff0000000000E0, (unsigned long)func);
+    asm volatile("dc civac, %0" : : "r"(0xffff0000000000E0) : "memory");
+    asm volatile("sev");
+    break;
+  case 2:
+    store64((unsigned long)0xffff0000000000E8, (unsigned long)func);
+    asm volatile("dc civac, %0" : : "r"(0xffff0000000000E8) : "memory");
+    asm volatile("sev");
+    break;
+  case 3:
+    store64((unsigned long)0xffff0000000000F0, (unsigned long)func);
+    asm volatile("dc civac, %0" : : "r"(0xffff0000000000F0) : "memory");
+    asm volatile("sev");
+    break;
   }
 }
 
-void Core::panic(const char *message) {
+void Core::panic(const char* message) {
   unsigned long add = get_far_el1();
   unsigned long cause = get_esr_el1();
   unsigned long ret = get_elr_el1();

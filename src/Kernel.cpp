@@ -27,11 +27,11 @@
 
 using SD::Lists::SinglyLinkedList;
 
-extern void *_boot_alloc_start;
-extern void *_boot_alloc_end;
+extern void* _boot_alloc_start;
+extern void* _boot_alloc_end;
 
-extern void *_heap_start;
-extern void *_heap_end;
+extern void* _heap_start;
+extern void* _heap_end;
 
 extern "C" void init_core();
 
@@ -63,16 +63,16 @@ extern "C" void kernel_main() {
   Core::disableIRQ();
 
   BootAllocator boot_allocator = BootAllocator(
-      (unsigned char *)&_boot_alloc_start, (unsigned char *)&_boot_alloc_end);
+    (unsigned char*)&_boot_alloc_start, (unsigned char*)&_boot_alloc_end);
 
   GlobalKernelAlloc::setAllocator(&boot_allocator);
 
   // We can use new with the boot allocator
   DriverManager::init();
-  GPIO *gpio = new GPIO();
-  UART *uart = new UART(gpio);
-  GIC400 *gic = new GIC400();
-  SystemTimer *timer = new SystemTimer();
+  GPIO* gpio = new GPIO();
+  UART* uart = new UART(gpio);
+  GIC400* gic = new GIC400();
+  SystemTimer* timer = new SystemTimer();
   DriverManager::load(gpio);
   DriverManager::load(uart);
   DriverManager::load(gic);
@@ -85,12 +85,12 @@ extern "C" void kernel_main() {
   Console::print("Current EL: %u\n", Std::getCurrentEL());
 
   Console::print("BootAlloc Start: 0x%x BootAlloc end: 0x%x\n",
-                 &_boot_alloc_start, &_boot_alloc_end);
+    &_boot_alloc_start, &_boot_alloc_end);
   Console::print("Heap Start: 0x%x Heap end: 0x%x\n",
-                 (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
+    (unsigned char*)&_heap_start, (unsigned char*)&_heap_end);
 
-  KernelHeapAllocator *kha = new KernelHeapAllocator(
-      (unsigned char *)&_heap_start, (unsigned char *)&_heap_end);
+  KernelHeapAllocator* kha = new KernelHeapAllocator(
+    (unsigned char*)&_heap_start, (unsigned char*)&_heap_end);
   GlobalKernelAlloc::setAllocator(kha);
   Console::print("Free Mem Bytes: %d\n", GlobalKernelAlloc::freeSpace());
   Console::print("List of loaded drivers:\n");
@@ -181,24 +181,25 @@ extern "C" void kernel_main() {
     }
 
    */
-  for (int i = 0; i < 4; ++i) Core::scheduler[i] = new Spinlock();
+  for (int i = 0; i < 4; ++i) Core::runningQLock[i] = new Spinlock();
+  Core::sleepingQLock = new Spinlock();
 
-  Core::runningQ[get_core()] = new SinglyLinkedList<Task *>();
-  Core::sleepingQ[get_core()] = new SinglyLinkedList<Task *>();
-  Task *idle = Task::createKernelTask((uint64_t)&idleTask);
+  Core::runningQ[get_core()] = new SinglyLinkedList<Task*>();
+  Core::sleepingQ = new SinglyLinkedList<Task*>();
+  Task* idle = Task::createKernelTask((uint64_t)&idleTask);
   Core::runningQ[get_core()]->insert(idle);
 
-  Task *n;
+  Task* n;
   for (int i = 0; i < THREAD_N; ++i) {
-    Task *t = Task::createKernelTask((uint64_t)&kernelTask);
+    Task* t = Task::createKernelTask((uint64_t)&kernelTask);
     Core::runningQ[get_core()]->insert(t);
     if (i == 0) n = t;
   }
-  Task *screen = Task::createKernelTask((uint64_t)&screenTask);
+  Task* screen = Task::createKernelTask((uint64_t)&screenTask);
   Core::runningQ[get_core()]->insert(screen);
   Core::current[get_core()] = new Task();
 
-  Task *topBar = Task::createKernelTask((uint64_t)&topBarTask);
+  Task* topBar = Task::createKernelTask((uint64_t)&topBarTask);
   Core::runningQ[get_core()]->insert(topBar);
 
   // Core::spinms(1000);

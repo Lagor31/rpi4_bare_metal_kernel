@@ -18,27 +18,26 @@ extern "C" void initSecondaryCore() {
 
   // Core::runningQ[core] = new Vector<Task *>();
   //  if (core != 1) _wait_for_interrupt();
-  Core::runningQ[get_core()] = new SinglyLinkedList<Task *>();
-  Core::sleepingQ[get_core()] = new SinglyLinkedList<Task *>();
+  Core::runningQ[get_core()] = new SinglyLinkedList<Task*>();
 
   // if (core == 3) {
-  Task *idle = Task::createKernelTask((uint64_t)&idleTask);
+  Task* idle = Task::createKernelTask((uint64_t)&idleTask);
   Core::runningQ[core]->insert(idle);
 
-  Task *n;
+  Task* n;
   for (int i = 0; i < THREAD_N; ++i) {
-    Task *t = Task::createKernelTask((uint64_t)&kernelTask);
+    Task* t = Task::createKernelTask((uint64_t)&kernelTask);
     Core::runningQ[core]->insert(t);
     if (i == 0) n = t;
   }
 
   // if (core == 3) {
-  Task *screen = Task::createKernelTask((uint64_t)&screenTask);
+  Task* screen = Task::createKernelTask((uint64_t)&screenTask);
   Core::runningQ[core]->insert(screen);
   //}
   Core::current[core] = new Task();
   Console::print("@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
-                 core);
+    core);
 
   Core::enableIRQ();
   // Core::switchTo(idle);
