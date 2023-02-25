@@ -31,13 +31,11 @@ extern "C" uint64_t get_sp();
 uint32_t nextCore = 0;
 Spinlock* sched_lock;
 void initSchedLock() { sched_lock = new Spinlock(); }
-uint64_t core_activations[4] = { 0 };
-uint64_t* handlers[16]{ nullptr };
+uint64_t core_activations[4] = {0};
+uint64_t* handlers[16]{nullptr};
 
-void copyRegs(CoreContext* s, CoreContext* d)
-{
-  for (int i = 0; i < 30; ++i)
-    d->gpr[i] = s->gpr[i];
+void copyRegs(CoreContext* s, CoreContext* d) {
+  for (int i = 0; i < 30; ++i) d->gpr[i] = s->gpr[i];
   d->elr_el1 = s->elr_el1;
   d->esr_el1 = s->esr_el1;
   d->lr = s->lr;
@@ -46,8 +44,8 @@ void copyRegs(CoreContext* s, CoreContext* d)
 }
 
 uint32_t calcNextCore() {
-  //return (++cc % 4);
-  //return Std::hash(SystemTimer::getTimer()->counter_lo) % 4;
+  // return (++cc % 4);
+  // return Std::hash(SystemTimer::getTimer()->counter_lo) % 4;
 
   int outCore = 0;
   uint32_t count = 0xfffffff;
@@ -63,22 +61,8 @@ uint32_t calcNextCore() {
   }
   return outCore;
 }
-// Current EL with SPx
-extern "C" void irq_handler_spx(CoreContext * regs) {
-  unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
-  unsigned int irq = irq_ack_reg & 0x3FF;
-  unsigned int cpu = (irq_ack_reg >> 10) & 7;
 
-  char at;
-  Task* next;
-  uint64_t c;
-  at = Std::hash(SystemTimer::getTimer()->counter_lo) % 16;
-  Task* goingToSleep = nullptr;
-  uint32_t index = 0;
-  uint32_t remCount = 0;
-  rpi_sys_timer_t* timer;
-
-
+void wakeUpTimers() {
   /*
     Waking up sleeping Tasks
     This is dangerous because we're doing memory alloc stuff (remove, insert)
@@ -91,223 +75,172 @@ extern "C" void irq_handler_spx(CoreContext * regs) {
     if (cTimer != 0 && cTimer <= SystemTimer::getTimer()->counter_lo) {
       Task* t = Core::sleepingQ->get(i);
       t->timer = 0;
-      //uint32_t nextCore = get_core();
-      //while ((++nextCore % 4) == get_core());
+      // uint32_t nextCore = get_core();
+      // while ((++nextCore % 4) == get_core());
       nextCore = calcNextCore();
-      //Console::print_no_lock("PID %d to Core%d\n", t->pid, nextCore);
+      // Console::print_no_lock("PID %d to Core%d\n", t->pid, nextCore);
       Core::runningQLock[nextCore]->getLock();
       Core::runningQ[nextCore]->insert(t);
       Core::sleepingQ->remove(i);
       Core::runningQLock[nextCore]->release();
       goto _end_sleep;
     }
-
   }
 _end_sleep:
   Core::sleepingQLock->release();
+}
 
+void reschedule(CoreContext* regs) {
+  Task* next;
+  uint64_t c;
 
-  switch (irq) {
-  case (SYSTEM_UARTRX_IRQ):
-    car = Console::getKernelConsole()->readChar();
-    //Console::print_no_lock("Uart int! %d\n", car);
-   /*  if (car == 13)
-    {
-      y += 18;
-      x = 0;
-    }
-    if (at <= 1)
-      at = 0xf;
-    if (drawChar(car, x, y, at))
-    {
-      x += 16;
-      if ((x + 16) > 1920)
-      {
-        y += 18;
-        x = 0;
-      }
-    } */
-    Console::print_no_lock("\n\n");
-    for (int i = 0; i < 4; ++i) {
-      Console::print_no_lock("#################\nCore%d\n", i);
-      Console::print_no_lock("RunninQ Core%d: %d\n", i, Core::runningQ[i]->count());
-    }
-    Console::print_no_lock("SleepingQ: %d\n\n", Core::sleepingQ->count());
-    Console::print_no_lock("\n\n");
-    timer = SystemTimer::getTimer();
-    Console::print_no_lock("System Timer Counter: %x\n", SystemTimer::getCounter());
-    Console::print_no_lock("System Timer Lo: %x\n", timer->counter_lo);
-    Console::print_no_lock("System Timer Hi: %x\n", timer->counter_hi);
-
-    Console::print_no_lock("System Timer Compare0: %x\n", timer->compare0);
-
-    Console::print_no_lock("\n\n");
-    MMIO::write(GICC_EOIR, irq);
-    break;
-
-  case (SYSTEM_TIMER_IRQ_1):
-    MMIO::write(GICC_EOIR, irq);
-    SystemTimer::WaitMicroT1(2000); // 2ms
-    SystemTimer::getTimer()->control_status |= 0b0010;
-
-    /* We reschedule */
-    if (Core::isPreamptable()) {
-
-      Core::runningQLock[get_core()]->getLock();
-
-      c = Std::hash(SystemTimer::getTimer()->counter_lo) %
-        Core::runningQ[get_core()]->count();
-      next = Core::runningQ[get_core()]->get(c);
-
-      Core::runningQLock[get_core()]->release();
-
-      copyRegs(regs, &Core::current[get_core()]->context);
-      copyRegs(&next->context, regs);
-      Core::current[get_core()] = next;
-      if (next->context.elr_el1 < 0xFFFF000000000000) {
-        Console::print_no_lock("Returning to wrong address 0x%x\n",
-          next->context.elr_el1);
-        _hang_forever();
-      }
-    }
-    /* We tell other cores to reschedule */
-    GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 1);
-    GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 2);
-    GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 3);
-    break;
-
-    /* We were told by Core0 to reschedule */
-  case SYSTEM_RESCHEDULE_IRQ:
-    MMIO::write(GICC_EOIR, irq);
-    if (Core::isPreamptable()) {
-
-      Core::runningQLock[get_core()]->getLock();
-
-      c = Std::hash(SystemTimer::getTimer()->counter_lo) %
-        Core::runningQ[get_core()]->count();
-      next = Core::runningQ[get_core()]->get(c);
-
-      Core::runningQLock[get_core()]->release();
-      // Core::scheduler->getLock();
-      //  Console::print("Kernel SP: 0x%x\n", get_sp());
-      copyRegs(regs, &Core::current[get_core()]->context);
-      copyRegs(&next->context, regs);
-      /* Console::print("IRQ Switching %d to PID %d\n",
-                     Core::current[get_core()]->pid, next->pid); */
-      Core::current[get_core()] = next;
-      if (next->context.elr_el1 < 0xFFFF000000000000) {
-        Console::print_no_lock("Returning to wrong address 0x%x\n",
-          next->context.elr_el1);
-        _hang_forever();
-      }
-    }
-    break;
-
-    /* We're told to sleep */
-  case SYSTEM_SLEEP_IRQ:
-    MMIO::write(GICC_EOIR, irq);
-    if (!Core::isPreamptable())
-      break;
-
-    goingToSleep = nullptr;
+  if (Core::isPreamptable()) {
     Core::runningQLock[get_core()]->getLock();
-    /* Putting current to sleep */
-    for (int i = 0; i < Core::runningQ[get_core()]->count(); ++i) {
-      if (Core::current[get_core()]->pid ==
-        Core::runningQ[get_core()]->get(i)->pid) {
-        goingToSleep = Core::runningQ[get_core()]->get(i);
-        timer = SystemTimer::getTimer();
-        uint32_t lo;
-        uint32_t hi;
-
-        do {
-          lo = timer->counter_lo;
-          hi = timer->counter_hi;
-        } while (hi != timer->counter_hi);
-
-        goingToSleep->timer = lo + goingToSleep->timer * (uint32_t)1000;
-        Core::runningQ[get_core()]->remove(i);
-        break;
-      }
-    }
 
     c = Std::hash(SystemTimer::getTimer()->counter_lo) %
-      Core::runningQ[get_core()]->count();
+        Core::runningQ[get_core()]->count();
     next = Core::runningQ[get_core()]->get(c);
+
     Core::runningQLock[get_core()]->release();
-
-
-    if (goingToSleep != nullptr) {
-      Core::sleepingQLock->getLock();
-      Core::sleepingQ->insert(goingToSleep);
-      Core::sleepingQLock->release();
-    }
 
     copyRegs(regs, &Core::current[get_core()]->context);
     copyRegs(&next->context, regs);
     Core::current[get_core()] = next;
     if (next->context.elr_el1 < 0xFFFF000000000000) {
       Console::print_no_lock("Returning to wrong address 0x%x\n",
-        next->context.elr_el1);
+                             next->context.elr_el1);
       _hang_forever();
     }
+  }
+}
 
+// Current EL with SPx
+extern "C" void irq_handler_spx(CoreContext* regs) {
+  unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
+  unsigned int irq = irq_ack_reg & 0x3FF;
+  unsigned int cpu = (irq_ack_reg >> 10) & 7;
 
-    break;
+  Task* next;
+  uint64_t c;
+  rpi_sys_timer_t* timer;
 
-    /* Halt core */
-  case SYSTEM_HALT_IRQ:
-    _hang_forever();
+  uint32_t index = 0;
+  uint32_t remCount = 0;
 
-    /* Spourius interrupts */
-  case SYSTEM_SPOURIOUS_IRQ:
-    Console::print_no_lock("SPOURIOUS INT RECEIVED Core%d: %x\r\n",
-      get_core(), irq);
-    MMIO::write(GICC_EOIR, irq);
-    break;
-  default:
-    MMIO::write(GICC_EOIR, irq);
-    break;
+  switch (irq) {
+    case (SYSTEM_TIMER_IRQ_1):
+
+      /* Wake up expired timers */
+      wakeUpTimers();
+
+      /* We reschedule */
+      reschedule(regs);
+
+      /* We tell other cores to reschedule */
+      GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 1);
+      GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 2);
+      GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 3);
+
+      MMIO::write(GICC_EOIR, irq);
+      SystemTimer::WaitMicroT1(2000);  // 2ms
+      SystemTimer::getTimer()->control_status |= 0b0010;
+
+      break;
+
+      /* We were told by Core0 to reschedule */
+    case SYSTEM_RESCHEDULE_IRQ:
+      MMIO::write(GICC_EOIR, irq);
+      reschedule(regs);
+      break;
+
+    case (SYSTEM_UARTRX_IRQ):
+      car = Console::getKernelConsole()->readChar();
+      // Console::print_no_lock("Uart int! %d\n", car);
+      /*  if (car == 13)
+       {
+         y += 18;
+         x = 0;
+       }
+       if (at <= 1)
+         at = 0xf;
+       if (drawChar(car, x, y, at))
+       {
+         x += 16;
+         if ((x + 16) > 1920)
+         {
+           y += 18;
+           x = 0;
+         }
+       } */
+      Console::print_no_lock("\n\n");
+      for (int i = 0; i < 4; ++i) {
+        Console::print_no_lock("#################\nCore%d\n", i);
+        Console::print_no_lock("RunninQ Core%d: %d\n", i,
+                               Core::runningQ[i]->count());
+      }
+      Console::print_no_lock("SleepingQ: %d\n\n", Core::sleepingQ->count());
+      Console::print_no_lock("\n\n");
+      timer = SystemTimer::getTimer();
+      Console::print_no_lock("System Timer Counter: %x\n",
+                             SystemTimer::getCounter());
+      Console::print_no_lock("System Timer Lo: %x\n", timer->counter_lo);
+      Console::print_no_lock("System Timer Hi: %x\n", timer->counter_hi);
+
+      Console::print_no_lock("System Timer Compare0: %x\n", timer->compare0);
+
+      Console::print_no_lock("\n\n");
+      MMIO::write(GICC_EOIR, irq);
+      break;
+
+      /* Halt core */
+    case SYSTEM_HALT_IRQ:
+      _hang_forever();
+
+      /* Spourius interrupts */
+    case SYSTEM_SPOURIOUS_IRQ:
+      Console::print_no_lock("SPOURIOUS INT RECEIVED Core%d: %x\r\n",
+                             get_core(), irq);
+      MMIO::write(GICC_EOIR, irq);
+      break;
+    default:
+      Console::print_no_lock("Unknown Interrupt %d on  Core%d: %x\r\n", irq,
+                             get_core());
+      MMIO::write(GICC_EOIR, irq);
+      break;
   }
 }
 
 // Current level w/ SP0
-extern "C" void irq_handler_sp0(CoreContext * regs)
-{
+extern "C" void irq_handler_sp0(CoreContext* regs) {
   irq_handler_spx(regs);
   /* Console::print_no_lock("Received IRQ Exception on core %d!!!\n",
   get_core()); Console::print_no_lock("Current Level with SP0\n"); */
   //_hang_forever();
 }
 
-void printRegs(CoreContext* regs)
-{
+void printRegs(CoreContext* regs) {
   for (int i = 0; i < 30; ++i)
     Console::print_no_lock("x%d=%x\n", i, regs->gpr[i]);
   Console::print_no_lock(
-    "SPSR=%x\nELR=%x\nESR=%x\nLR=%x\nSP_EL0=%x\nFAR_EL1=%x\n", regs->sprs_el1,
-    regs->elr_el1, regs->esr_el1, regs->lr, regs->sp_el0, regs->far_el1);
+      "SPSR=%x\nELR=%x\nESR=%x\nLR=%x\nSP_EL0=%x\nFAR_EL1=%x\n", regs->sprs_el1,
+      regs->elr_el1, regs->esr_el1, regs->lr, regs->sp_el0, regs->far_el1);
 
   Console::print_no_lock("Current PID: %d\n", Core::current[get_core()]->pid);
 }
 
-extern "C" void sync_handler_sp0(CoreContext * regs)
-{
+extern "C" void sync_handler_sp0(CoreContext* regs) {
   unsigned long add = get_far_el1();
   unsigned long cause = get_esr_el1();
   unsigned long ret = get_elr_el1();
 
   int i = 0;
-  for (; i < 4; ++i)
-  {
-    if (get_core() != i)
-      GIC400::send_sgi(1, i);
+  for (; i < 4; ++i) {
+    if (get_core() != i) GIC400::send_sgi(1, i);
   }
   i = 0;
-  while (i++ < 5)
-  {
+  while (i++ < 5) {
     Console::print_no_lock("Received SYNC Exception on core %d!!!\n",
-      get_core());
+                           get_core());
     Console::print_no_lock("Current Level with SP0\n");
     printRegs(regs);
     Core::spinms(1000 + get_core() * 10);
@@ -317,36 +250,30 @@ extern "C" void sync_handler_sp0(CoreContext * regs)
   i++;
 }
 
-extern "C" void fiq_handler_sp0()
-{
+extern "C" void fiq_handler_sp0() {
   Console::print("Received FIQ Exception on core %d!!!\n", get_core());
   Console::print("Current Level with SP0\n");
   _hang_forever();
 }
 
-extern "C" void serror_handler_sp0()
-{
+extern "C" void serror_handler_sp0() {
   Console::print("Received SEError Exception on core %d!!!\n", get_core());
   Console::print("Current Level with SP0\n");
   _hang_forever();
 }
 
-extern "C" void sync_handler_spx(CoreContext * regs)
-{
+extern "C" void sync_handler_spx(CoreContext* regs) {
   unsigned long add = get_far_el1();
   unsigned long cause = get_esr_el1();
   unsigned long ret = get_elr_el1();
   int i = 0;
-  for (; i < 4; ++i)
-  {
-    if (get_core() != i)
-      GIC400::send_sgi(1, i);
+  for (; i < 4; ++i) {
+    if (get_core() != i) GIC400::send_sgi(1, i);
   }
   i = 0;
-  while (i++ < 10)
-  {
+  while (i++ < 10) {
     Console::print_no_lock("Received SYNC Exception on core %d!!!\n",
-      get_core());
+                           get_core());
     Console::print_no_lock("Current Level with SPX\n");
     printRegs(regs);
     Core::spinms(1000 + get_core() * 10);
@@ -354,15 +281,13 @@ extern "C" void sync_handler_spx(CoreContext * regs)
   _hang_forever();
 }
 
-extern "C" void fiq_handler_spx()
-{
+extern "C" void fiq_handler_spx() {
   Console::print("Received FIQ Exception on core %d!!!\n", get_core());
   Console::print("Current Level with SPX\n");
   _hang_forever();
 }
 
-extern "C" void serror_handler_spx()
-{
+extern "C" void serror_handler_spx() {
   Console::print("Received SEError Exception on core %d!!!\n", get_core());
   Console::print("Current Level with SPX\n");
   _hang_forever();
@@ -370,58 +295,50 @@ extern "C" void serror_handler_spx()
 
 // LowerEL ausing AArch64
 
-extern "C" void irq_handler_lower_aarch64()
-{
+extern "C" void irq_handler_lower_aarch64() {
   Console::print("Received IRQ Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch64\n");
   _hang_forever();
 }
 
-extern "C" void sync_handler_lower_aarch64()
-{
+extern "C" void sync_handler_lower_aarch64() {
   Console::print("Received SYNC Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch64\n");
   _hang_forever();
 }
 
-extern "C" void fiq_handler_lower_aarch64()
-{
+extern "C" void fiq_handler_lower_aarch64() {
   Console::print("Received FIQ Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch64\n");
   _hang_forever();
 }
 
-extern "C" void serror_handler_lower_aarch64()
-{
+extern "C" void serror_handler_lower_aarch64() {
   Console::print("Received SEError Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch64\n");
   _hang_forever();
 }
 
 // LowerEL ausing AArch32
-extern "C" void irq_handler_lower_aarch32()
-{
+extern "C" void irq_handler_lower_aarch32() {
   Console::print("Received IRQ Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch32\n");
   _hang_forever();
 }
 
-extern "C" void sync_handler_lower_aarch32()
-{
+extern "C" void sync_handler_lower_aarch32() {
   Console::print("Received SYNC Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch32\n");
   _hang_forever();
 }
 
-extern "C" void fiq_handler_lower_aarch32()
-{
+extern "C" void fiq_handler_lower_aarch32() {
   Console::print("Received FIQ Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch32\n");
   _hang_forever();
 }
 
-extern "C" void serror_handler_lower_aarch32()
-{
+extern "C" void serror_handler_lower_aarch32() {
   Console::print("Received SEError Exception on core %d!!!\n", get_core());
   Console::print("Lower level with aarch32\n");
   _hang_forever();

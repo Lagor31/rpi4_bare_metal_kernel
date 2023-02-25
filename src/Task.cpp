@@ -20,7 +20,6 @@ extern "C" unsigned int get_core();
 void idleTask() { _hang_forever(); }
 
 void topBarTask() {
-
   uint64_t count = 0;
   uint8_t at = 0xF;
   uint8_t tAt = 0xF;
@@ -28,20 +27,20 @@ void topBarTask() {
     uint32_t core = get_core();
     uint64_t pid = Core::current[core]->pid;
     switch (core) {
-    case 0:
-      tAt = 0xFF;
-      break;
-    case 1:
-      tAt = 0xCC;
-      break;
-    case 2:
-      tAt = 0xBB;
-      break;
-    case 3:
-      tAt = 0xDD;
-      break;
-    default:
-      Core::panic("Wrong CPU!!!!\n");
+      case 0:
+        tAt = 0xFF;
+        break;
+      case 1:
+        tAt = 0xCC;
+        break;
+      case 2:
+        tAt = 0xBB;
+        break;
+      case 3:
+        tAt = 0xDD;
+        break;
+      default:
+        Core::panic("Wrong CPU!!!!\n");
     }
 
     /*  do {
@@ -80,7 +79,7 @@ void screenTask() {
 
       Core::preemptDisable();
       drawCircle(drawMe->x, drawMe->y, drawMe->radius, drawMe->attr,
-        drawMe->fill);
+                 drawMe->fill);
       Core::disableIRQ();
       delete drawMe;
       Core::enableIRQ();
@@ -122,12 +121,12 @@ void kernelTask() {
     uint64_t sp = get_sp();
     // Core::preemptDisable();
     Core::current[core]->sleep(2000 +
-      Std::hash(SystemTimer::getCounter()) % 1000);
+                               Std::hash(SystemTimer::getCounter()) % 1000);
     /* Console::print(
         "\nKernel thread #%d on Core%d PID: %d!\nSP: %x Free: %d Count: %d\n",
         Core::current[core]->pid, core, pid, sp,
        GlobalKernelAlloc::freeSpace(), count++); */
-       // for (int i = 0; i < 100; ++i) Std::hash(i);
+    // for (int i = 0; i < 100; ++i) Std::hash(i);
     uint32_t x = Std::hash(SystemTimer::getCounter()) % (1920);
     uint32_t y = Std::hash(SystemTimer::getCounter()) % (1080) + 32;
 
@@ -142,32 +141,69 @@ void kernelTask() {
     paintMe->y = y;
 
     switch (core) {
-    case 0:
-      paintMe->attr = 0xFF;
-      break;
-    case 1:
-      paintMe->attr = 0xCC;
-      break;
-    case 2:
-      paintMe->attr = 0xBB;
-      break;
-    case 3:
-      paintMe->attr = 0xDD;
-      break;
-    default:
-      Core::panic("Wrong CPU!!!!\n");
+      case 0:
+        paintMe->attr = 0xFF;
+        break;
+      case 1:
+        paintMe->attr = 0xCC;
+        break;
+      case 2:
+        paintMe->attr = 0xBB;
+        break;
+      case 3:
+        paintMe->attr = 0xDD;
+        break;
+      default:
+        Core::panic("Wrong CPU!!!!\n");
     }
     paintMe->fill = 1;
     paintMe->radius = radius;
-    //Console::print("Printing Circle form PID=%d On Core=%d!\n", pid, core);
+    // Console::print("Printing Circle form PID=%d On Core=%d!\n", pid, core);
     paintCircle(paintMe);
   }
   _hang_forever();
 }
 
 void Task::sleep(uint32_t ms) {
+  Task* goingToSleep = nullptr;
+  rpi_sys_timer_t* timer;
+
+  goingToSleep = nullptr;
+
+  Core::disableIRQ();
+  Core::runningQLock[get_core()]->getLock();
   Core::current[get_core()]->timer = ms;
-  GIC400::send_sgi(SYSTEM_SLEEP_IRQ, get_core());
+
+  /* Putting current to sleep */
+  for (int i = 0; i < Core::runningQ[get_core()]->count(); ++i) {
+    if (Core::current[get_core()]->pid ==
+        Core::runningQ[get_core()]->get(i)->pid) {
+      goingToSleep = Core::runningQ[get_core()]->get(i);
+      timer = SystemTimer::getTimer();
+      uint32_t lo;
+      uint32_t hi;
+
+      do {
+        lo = timer->counter_lo;
+        hi = timer->counter_hi;
+      } while (hi != timer->counter_hi);
+
+      goingToSleep->timer = lo + goingToSleep->timer * (uint32_t)1000;
+      Core::runningQ[get_core()]->remove(i);
+      break;
+    }
+  }
+
+  Core::runningQLock[get_core()]->release();
+
+  if (goingToSleep != nullptr) {
+    Core::sleepingQLock->getLock();
+    Core::sleepingQ->insert(goingToSleep);
+    Core::sleepingQLock->release();
+  }
+  
+  Core::enableIRQ();
+  GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, get_core());
 }
 
 uint64_t Task::freePID = 1;
@@ -186,7 +222,10 @@ Task* Task::createKernelTask(uint64_t entryPoint) {
   // 0x364 int enabled
   out->context.sprs_el1 = 0x364;
   out->pid = Task::freePID++;
+  for (int i = 0; i < 30; ++i) out->context.gpr[i] = 0;
+
   out->context.gpr[10] = Task::freePID;
+
   out->c = 0;
   out->timer = 0;
   return out;
