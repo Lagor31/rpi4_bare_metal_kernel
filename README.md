@@ -8,7 +8,7 @@
 - Synchronization (ARM Spinlock)
 - UART RX/TX
 - Videocore VI Mailbox Interface
-- Framebuffer
+- Framebuffer (HDMI output)
 
 ### Debug & Testing
 Debugged on live hardware with OpenOCD + JTAGS + Olimex Tiny H (https://www.olimex.com/Products/ARM/JTAG/ARM-USB-TINY-H/)  
