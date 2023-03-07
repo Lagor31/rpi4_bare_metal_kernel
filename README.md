@@ -14,7 +14,7 @@
 ### Debug & Testing
 Debugged on live hardware with OpenOCD + JTAGS + Olimex Tiny H (https://www.olimex.com/Products/ARM/JTAG/ARM-USB-TINY-H/)  
   
-Install openocd from sources with  
+Install **openocd** from sources with  
 ```
 ./configure --enable-ftdi
 ```
