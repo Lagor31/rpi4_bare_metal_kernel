@@ -1,7 +1,12 @@
-arm_64bit=1
-init_uart_clock=48000000
-enable_gic=1
 core_freq_min=500
+hdmi_group=1
+hdmi_mode=16
+enable_jtag_gpio=1
 disable_commandline_tags=1
+enable_gic=1
 armstub=armstub8-gic.bin
 kernel_old=0
+arm_64bit=1
+init_uart_clock=48000000
+disable_overscan=1
+hdmi_force_hotplug=1
