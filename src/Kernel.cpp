@@ -121,8 +121,8 @@ extern "C" void kernel_main() {
   Core::runningQ[get_core()]->insert(screen);
   Core::current[get_core()] = new Task();
 
-  Task* topBar = Task::createKernelTask((uint64_t)&topBarTask);
-  Core::runningQ[get_core()]->insert(topBar);
+  /* Task* topBar = Task::createKernelTask((uint64_t)&topBarTask);
+  Core::runningQ[get_core()]->insert(topBar); */
 
   // Core::spinms(1000);
   Core::start(1, &init_core);

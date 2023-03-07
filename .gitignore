@@ -1,4 +1,5 @@
 .gdb_history
+*.log
 # Prerequisites
 *.d
 

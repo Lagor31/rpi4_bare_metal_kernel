@@ -2,10 +2,10 @@
 
 #include "include/Console.h"
 #include "include/Core.h"
-#include "include/Mem.h"
-#include "include/Spinlock.h"
 #include "include/IO.h"
 #include "include/Mailbox.h"
+#include "include/Mem.h"
+#include "include/Spinlock.h"
 #include "include/Terminal.h"
 
 using SD::Lists::SinglyLinkedList;
@@ -17,7 +17,21 @@ unsigned char* fb;
 unsigned char* kernelFb;
 
 Spinlock* fb_lock;
-
+uint8_t getCoreColor(uint32_t coreNumber) {
+  switch (coreNumber) {
+    case 0:
+      return 0x0F;
+    case 1:
+      return 0x0C;
+    case 2:
+      return 0x0B;
+    case 3:
+      return 0x0D;
+    default:
+      Core::panic("Wrong CPU!!!!\n");
+  }
+  return 0xFF;
+}
 void FBInit() {
   fb_lock = new Spinlock();
   mbox[0] = 35 * 4;  // Length of message in bytes
@@ -78,9 +92,13 @@ void FBInit() {
 
     // for (int c = 0; c < 4 * width * height; ++c) fb[c] = 0xeE;
     Console::print("Frame buffer allocated!\nW: %d H: %d Pitch: %d RGB %d\n",
-      width, height, pitch, isrgb);
-  }
-  else
+                   width, height, pitch, isrgb);
+
+    char* core[] = {"Core0 ", "Core1 ", "Core2 ", "Core3 "};
+    for (int c = 0; c < 4; ++c)
+      drawString(860 + c * 50, 0, core[c], getCoreColor(c));
+
+  } else
     Core::panic("Error allocating framebuffer!\n");
 }
 
@@ -123,8 +141,7 @@ void drawLine(int x1, int y1, int x2, int y2, unsigned char attr) {
       drawPixel(x, y, attr);
       y++;
       p = p + 2 * dy - 2 * dx;
-    }
-    else {
+    } else {
       drawPixel(x, y, attr);
       p = p + 2 * dy;
     }
@@ -180,40 +197,17 @@ void drawCircle(int x0, int y0, int radius, unsigned char attr, int fill) {
 }
 
 bool drawChar(unsigned char ch, int x, int y, unsigned char attr) {
-  static char* g;
-
-  switch (ch) {
-  case 'f':
-    g = f_bits;
-    break;
-  case 'e':
-    g = e_bits;
-    break;
-  case 'd':
-    g = d_bits;
-    break;
-  case 'F':
-    g = F_bits;
-    break;
-  default:
-    return false;
-  }
-
-  uint32_t pX = x;
-  uint32_t pY = y;
-  char* glyph = g;
+  unsigned char* glyph =
+      (unsigned char*)&font + (ch < FONT_NUMGLYPHS ? ch : 0) * FONT_BPG;
 
   for (int i = 0; i < FONT_HEIGHT; i++) {
-    for (int j = 0; j < FONT_BPL; j++) {
-      for (int l = 0; l < 8; l++) {
-        unsigned char mask = 1 << l;
-        unsigned char col =
-          (glyph[i * 2 + j] & mask) ? attr & 0x0f : (attr & 0xf0) >> 4;
-        drawPixel(pX + l, pY + i, col);
-      }
-      pX += 8;
+    for (int j = 0; j < FONT_WIDTH; j++) {
+      unsigned char mask = 1 << j;
+      unsigned char col = (*glyph & mask) ? attr & 0x0f : (attr & 0xf0) >> 4;
+
+      drawPixel(x + j, y + i, col);
     }
-    pX = x;
+    glyph += FONT_BPL;
   }
   return true;
 }
@@ -222,12 +216,10 @@ void drawString(int x, int y, char* s, unsigned char attr) {
   while (*s) {
     if (*s == '\r') {
       x = 0;
-    }
-    else if (*s == '\n') {
+    } else if (*s == '\n') {
       x = 0;
       y += FONT_HEIGHT;
-    }
-    else {
+    } else {
       drawChar(*s, x, y, attr);
       x += FONT_WIDTH;
     }

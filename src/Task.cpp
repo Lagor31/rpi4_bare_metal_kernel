@@ -26,34 +26,11 @@ void topBarTask() {
   while (true) {
     uint32_t core = get_core();
     uint64_t pid = Core::current[core]->pid;
-    switch (core) {
-      case 0:
-        tAt = 0xFF;
-        break;
-      case 1:
-        tAt = 0xCC;
-        break;
-      case 2:
-        tAt = 0xBB;
-        break;
-      case 3:
-        tAt = 0xDD;
-        break;
-      default:
-        Core::panic("Wrong CPU!!!!\n");
-    }
 
-    /*  do {
-       tAt = Std::hash(SystemTimer::getCounter()) % 16;
-     } while (tAt == at); */
-    // Console::print("TopBAR form PID=%d On Core=%d!\n", pid, core);
-
-    at = tAt;
-    uint64_t sp = get_sp();
     char* hText = "FedeFede";
     Core::disableIRQ();
     for (int i = 0; i < 8; ++i) {
-      drawChar(hText[i], i * 16 + 800, 0, at);
+      drawChar(hText[i], i * 16 + 800, 0, getCoreColor(core));
     }
     Core::enableIRQ();
     Core::current[core]->sleep(1000);

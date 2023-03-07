@@ -15,6 +15,7 @@ typedef struct circle_t {
   uint8_t fill;
 } Circle;
 using SD::Lists::SinglyLinkedList;
+uint8_t getCoreColor(uint32_t coreNumber);
 void paintCircle(Circle *c);
 void FBInit();
 void drawPixel(int x, int y, unsigned char attr);
