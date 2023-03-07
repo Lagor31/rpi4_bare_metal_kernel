@@ -27,6 +27,8 @@ sudo minicom -D /dev/ttyUSB0 --baudrate 11520
 ### TODO:
 - Unix Pipes
 - System calls
+- Shell
+- Users, Groups & Permissions
 - EMMC Driver
 - Custom filesystem
 - ELF Loader
