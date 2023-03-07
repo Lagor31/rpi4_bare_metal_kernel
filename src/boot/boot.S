@@ -7,7 +7,7 @@
 .space 5 * 1024 * 1024, 0
 
 .section ".heap"
-.space 30 * 1024 * 1024, 0
+.space 20 * 1024 * 1024, 0
 
 .section ".boot", #alloc, #execinstr // Make sure the linker puts this at the start of the kernel image
 

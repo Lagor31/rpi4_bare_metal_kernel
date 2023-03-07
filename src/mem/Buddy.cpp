@@ -208,6 +208,7 @@ void *buddy_malloc(struct buddy *buddy, size_t requested_size) {
 
   /* Allocate the slot */
   buddy_tree_mark(tree, pos);
+  //Console::print("Alloc Order %d\n", tree->order);
   // buddy->free -= (4096 << tree->order);
   /* Find and return the actual memory address */
   return address_for_position(buddy, pos);
@@ -335,6 +336,7 @@ void buddy_free(struct buddy *buddy, void *ptr) {
   // buddy->free += (4096 << tree->order);
 
   buddy_tree_release(tree, pos);
+  //Console::print("Free Order %d\n", tree->order);
 }
 
 void buddy_safe_free(struct buddy *buddy, void *ptr, size_t requested_size) {

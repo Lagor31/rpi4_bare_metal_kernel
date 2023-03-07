@@ -46,7 +46,7 @@ void topBarTask() {
     /*  do {
        tAt = Std::hash(SystemTimer::getCounter()) % 16;
      } while (tAt == at); */
-    Console::print("TopBAR form PID=%d On Core=%d!\n", pid, core);
+    // Console::print("TopBAR form PID=%d On Core=%d!\n", pid, core);
 
     at = tAt;
     uint64_t sp = get_sp();
@@ -168,42 +168,18 @@ void Task::sleep(uint32_t ms) {
   Task* goingToSleep = nullptr;
   rpi_sys_timer_t* timer;
 
-  goingToSleep = nullptr;
+  Task* curr = Core::current[get_core()];
 
-  Core::disableIRQ();
-  Core::runningQLock[get_core()]->getLock();
-  Core::current[get_core()]->timer = ms;
+  timer = SystemTimer::getTimer();
+  uint32_t lo;
+  uint32_t hi;
 
-  /* Putting current to sleep */
-  for (int i = 0; i < Core::runningQ[get_core()]->count(); ++i) {
-    if (Core::current[get_core()]->pid ==
-        Core::runningQ[get_core()]->get(i)->pid) {
-      goingToSleep = Core::runningQ[get_core()]->get(i);
-      timer = SystemTimer::getTimer();
-      uint32_t lo;
-      uint32_t hi;
-
-      do {
-        lo = timer->counter_lo;
-        hi = timer->counter_hi;
-      } while (hi != timer->counter_hi);
-
-      goingToSleep->timer = lo + goingToSleep->timer * (uint32_t)1000;
-      Core::runningQ[get_core()]->remove(i);
-      break;
-    }
-  }
-
-  Core::runningQLock[get_core()]->release();
-
-  if (goingToSleep != nullptr) {
-    Core::sleepingQLock->getLock();
-    Core::sleepingQ->insert(goingToSleep);
-    Core::sleepingQLock->release();
-  }
-  
-  Core::enableIRQ();
-  GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, get_core());
+  do {
+    lo = timer->counter_lo;
+    hi = timer->counter_hi;
+  } while (hi != timer->counter_hi);
+  curr->timer = lo + ms * (uint32_t)1000;
+  GIC400::send_sgi(SYSTEM_SLEEP_IRQ, get_core());
 }
 
 uint64_t Task::freePID = 1;

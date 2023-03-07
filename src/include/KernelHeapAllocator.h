@@ -3,6 +3,8 @@
 
 #include "Mem.h"
 #include "Spinlock.h"
+extern uint64_t allocations;
+
 class KernelHeapAllocator : public MemoryAllocator {
  public:
   KernelHeapAllocator(){};

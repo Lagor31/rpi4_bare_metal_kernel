@@ -30,9 +30,11 @@ void GlobalKernelAlloc::setAllocator(MemoryAllocator *in) {
 }
 
 void *GlobalKernelAlloc::alloc(unsigned size) {
+  // Console::print("Alloc %d bytes\n", size);
   return GlobalKernelAlloc::getAllocator()->alloc(size);
 }
 void GlobalKernelAlloc::free(void *p) {
+  // Console::print("Free %x ptr\n", p);
   return GlobalKernelAlloc::getAllocator()->free(p);
 };
 unsigned long GlobalKernelAlloc::freeSpace() {
@@ -47,23 +49,23 @@ unsigned int MMIO::read(unsigned long reg) {
 }
 
 void *operator new(size_t size) {
-  //Console::print_no_lock("New called Size: %d\n", size);
+  // Console::print_no_lock("New called Size: %d\n", size);
   return GlobalKernelAlloc::alloc(size);
 }
 void *operator new[](size_t size) {
-  //Console::print_no_lock("New[] called Size: %d\n", size);
+  // Console::print_no_lock("New[] called Size: %d\n", size);
   return GlobalKernelAlloc::alloc(size);
 }
 void operator delete(void *p) {
-  //Console::print_no_lock("Delete called\n");
+  // Console::print_no_lock("Delete called\n");
   GlobalKernelAlloc::free(p);
 }
 void operator delete(void *p, unsigned long s) {
-  //Console::print_no_lock("Delete long called Size: %d\n", s);
+  // Console::print_no_lock("Delete long called Size: %d\n", s);
   GlobalKernelAlloc::free(p);
 }
 void operator delete[](void *p) {
-  //Console::print_no_lock("Delete[] called\n");
+  // Console::print_no_lock("Delete[] called\n");
   GlobalKernelAlloc::free(p);
 }
 

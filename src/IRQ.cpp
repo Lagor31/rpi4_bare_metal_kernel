@@ -6,6 +6,7 @@
 #include "include/Console.h"
 #include "include/Core.h"
 #include "include/GIC.h"
+#include "include/KernelHeapAllocator.h"
 #include "include/Lists/ArrayList.hpp"
 #include "include/Mem.h"
 #include "include/Spinlock.h"
@@ -100,7 +101,6 @@ void reschedule(CoreContext* regs) {
     c = Std::hash(SystemTimer::getTimer()->counter_lo) %
         Core::runningQ[get_core()]->count();
     next = Core::runningQ[get_core()]->get(c);
-
     Core::runningQLock[get_core()]->release();
 
     copyRegs(regs, &Core::current[get_core()]->context);
@@ -141,7 +141,6 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
       GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 2);
       GIC400::send_sgi(SYSTEM_RESCHEDULE_IRQ, 3);
 
-      MMIO::write(GICC_EOIR, irq);
       SystemTimer::WaitMicroT1(2000);  // 2ms
       SystemTimer::getTimer()->control_status |= 0b0010;
 
@@ -149,7 +148,26 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
 
       /* We were told by Core0 to reschedule */
     case SYSTEM_RESCHEDULE_IRQ:
-      MMIO::write(GICC_EOIR, irq);
+      reschedule(regs);
+      break;
+
+    case SYSTEM_SLEEP_IRQ:
+
+      Core::runningQLock[get_core()]->getLock();
+      // Putting current to sleep
+      for (int i = 0; i < Core::runningQ[get_core()]->count(); ++i) {
+        if (Core::current[get_core()]->pid ==
+            Core::runningQ[get_core()]->get(i)->pid) {
+          Core::runningQ[get_core()]->remove(i);
+          break;
+        }
+      }
+
+      Core::runningQLock[get_core()]->release();
+
+      Core::sleepingQLock->getLock();
+      Core::sleepingQ->insert(Core::current[get_core()]);
+      Core::sleepingQLock->release();
       reschedule(regs);
       break;
 
@@ -187,9 +205,8 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
       Console::print_no_lock("System Timer Hi: %x\n", timer->counter_hi);
 
       Console::print_no_lock("System Timer Compare0: %x\n", timer->compare0);
-
+      Console::print_no_lock("Allocations: %d\n", allocations);
       Console::print_no_lock("\n\n");
-      MMIO::write(GICC_EOIR, irq);
       break;
 
       /* Halt core */
@@ -200,14 +217,14 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
     case SYSTEM_SPOURIOUS_IRQ:
       Console::print_no_lock("SPOURIOUS INT RECEIVED Core%d: %x\r\n",
                              get_core(), irq);
-      MMIO::write(GICC_EOIR, irq);
       break;
     default:
-      Console::print_no_lock("Unknown Interrupt %d on  Core%d: %x\r\n", irq,
+      Console::print_no_lock("Unknown Interrupt %d on  Core%d\r\n", irq,
                              get_core());
-      MMIO::write(GICC_EOIR, irq);
       break;
   }
+
+  MMIO::write(GICC_EOIR, irq);
 }
 
 // Current level w/ SP0
