@@ -27,7 +27,7 @@ sudo minicom -D /dev/ttyUSB0 --baudrate 11520
 - Unix Pipes
 - EMMC Driver
 - Custom filesystem
-- ELF
+- ELF Loader
 - Slab Allocator
 - On Disk Paging
 - Usermode Tasks
