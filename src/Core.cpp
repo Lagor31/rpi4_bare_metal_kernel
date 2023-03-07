@@ -26,7 +26,7 @@ SinglyLinkedList<Task*>* Core::runningQ[4];
 SinglyLinkedList<Task*>* Core::sleepingQ;
 
 void Core::printList(SinglyLinkedList<Task*>* l) {
-  for (int i = 0; i < l->count(); ++i) {
+  for (uint32_t i = 0; i < l->count(); ++i) {
     Console::print("PID: %d\n", l->get(i)->pid);
   }
 }
@@ -57,10 +57,7 @@ void Core::start(uint32_t core, void (*func)(void)) {
 }
 
 void Core::panic(const char* message) {
-  unsigned long add = get_far_el1();
-  unsigned long cause = get_esr_el1();
-  unsigned long ret = get_elr_el1();
-  int i = 0;
+  uint32_t i = 0;
   for (; i < 4; ++i) {
     if (get_core() != i) GIC400::send_sgi(1, i);
   }

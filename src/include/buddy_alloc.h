@@ -138,7 +138,7 @@ void buddy_set_optimal_fit(struct buddy *buddy);
  */
 
 /* Implementation defined */
-// static void buddy_debug(FILE *stream, struct buddy *buddy);
+//  void buddy_debug(FILE *stream, struct buddy *buddy);
 
 // struct buddy_tree;
 
@@ -172,78 +172,78 @@ struct buddy_tree_walk_state {
  */
 
 /* Returns the size of a buddy allocation tree of the desired order*/
-static size_t buddy_tree_sizeof(uint8_t order);
+ size_t buddy_tree_sizeof(uint8_t order);
 
 /* Initializes a buddy allocation tree at the specified location */
-static struct buddy_tree *buddy_tree_init(unsigned char *at, uint8_t order);
+ struct buddy_tree *buddy_tree_init(unsigned char *at, uint8_t order);
 
 /* Indicates whether this is a valid position for the tree */
-static unsigned int buddy_tree_valid(struct buddy_tree *t,
+ unsigned int buddy_tree_valid(struct buddy_tree *t,
                                      struct buddy_tree_pos pos);
 
 /* Returns the order of the specified buddy allocation tree */
-static uint8_t buddy_tree_order(struct buddy_tree *t);
+ uint8_t buddy_tree_order(struct buddy_tree *t);
 
 /* Resize the tree to the new order. When downsizing the left subtree is picked.
  */
 /* Caller must ensure enough space for the new order. */
-static void buddy_tree_resize(struct buddy_tree *t, uint8_t desired_order);
+ void buddy_tree_resize(struct buddy_tree *t, uint8_t desired_order);
 
 /*
  * Navigation functions
  */
 
 /* Returns a position at the root of a buddy allocation tree */
-static struct buddy_tree_pos buddy_tree_root(void);
+ struct buddy_tree_pos buddy_tree_root(void);
 
 /* Returns the leftmost child node */
-static struct buddy_tree_pos buddy_tree_leftmost_child(struct buddy_tree *t);
+ struct buddy_tree_pos buddy_tree_leftmost_child(struct buddy_tree *t);
 
 /* Returns the tree depth of the indicated position */
-static inline size_t buddy_tree_depth(struct buddy_tree_pos pos);
+ inline size_t buddy_tree_depth(struct buddy_tree_pos pos);
 
 /* Returns the left child node position. Does not check if that is a valid
  * position */
-static inline struct buddy_tree_pos buddy_tree_left_child(
+ inline struct buddy_tree_pos buddy_tree_left_child(
     struct buddy_tree_pos pos);
 
 /* Returns the right child node position. Does not check if that is a valid
  * position */
-static inline struct buddy_tree_pos buddy_tree_right_child(
+ inline struct buddy_tree_pos buddy_tree_right_child(
     struct buddy_tree_pos pos);
 
 /* Returns the current sibling node position. Does not check if that is a valid
  * position */
-static inline struct buddy_tree_pos buddy_tree_sibling(
+ inline struct buddy_tree_pos buddy_tree_sibling(
     struct buddy_tree_pos pos);
 
 /* Returns the parent node position or an invalid position if there is no parent
  * node */
-static inline struct buddy_tree_pos buddy_tree_parent(
+ inline struct buddy_tree_pos buddy_tree_parent(
     struct buddy_tree_pos pos);
 
 /* Returns the right adjacent node position or an invalid position if there is
  * no right adjacent node */
-static struct buddy_tree_pos buddy_tree_right_adjacent(
+ struct buddy_tree_pos buddy_tree_right_adjacent(
     struct buddy_tree_pos pos);
 
 /* Returns the at-depth index of the indicated position */
-static size_t buddy_tree_index(struct buddy_tree_pos pos);
+ size_t buddy_tree_index(struct buddy_tree_pos pos);
 
 /* Return the interval of the deepest positions spanning the indicated position
  */
-static struct buddy_tree_interval buddy_tree_interval(
+ struct buddy_tree_interval buddy_tree_interval(
     struct buddy_tree *t, struct buddy_tree_pos pos);
 
 /* Checks if one interval contains another */
-static unsigned int buddy_tree_interval_contains(
+ unsigned int buddy_tree_interval_contains(
     struct buddy_tree_interval outer, struct buddy_tree_interval inner);
 
 /* Return a walk state structure starting from the root of a tree */
-static struct buddy_tree_walk_state buddy_tree_walk_state_root();
+ struct buddy_tree_walk_state buddy_tree_walk_state_root();
 
 /* Walk the tree, keeping track in the provided state structure */
-static unsigned int buddy_tree_walk(struct buddy_tree *t,
+ unsigned int buddy_tree_walk(struct buddy_tree *t,
                                     struct buddy_tree_walk_state *state);
 
 /*
@@ -251,67 +251,67 @@ static unsigned int buddy_tree_walk(struct buddy_tree *t,
  */
 
 /* Returns the free capacity at or underneath the indicated position */
-static size_t buddy_tree_status(struct buddy_tree *t,
+ size_t buddy_tree_status(struct buddy_tree *t,
                                 struct buddy_tree_pos pos);
 
 /* Marks the indicated position as allocated and propagates the change */
-static void buddy_tree_mark(struct buddy_tree *t, struct buddy_tree_pos pos);
+ void buddy_tree_mark(struct buddy_tree *t, struct buddy_tree_pos pos);
 
 /* Marks the indicated position as free and propagates the change */
-static void buddy_tree_release(struct buddy_tree *t, struct buddy_tree_pos pos);
+ void buddy_tree_release(struct buddy_tree *t, struct buddy_tree_pos pos);
 
 /* Returns a free position at the specified depth or an invalid position */
-static struct buddy_tree_pos buddy_tree_find_free(struct buddy_tree *t,
+ struct buddy_tree_pos buddy_tree_find_free(struct buddy_tree *t,
                                                   uint8_t depth,
                                                   uint8_t left_bias);
 
 /* Tests if the incidated position is available for allocation */
-static unsigned int buddy_tree_is_free(struct buddy_tree *t,
+ unsigned int buddy_tree_is_free(struct buddy_tree *t,
                                        struct buddy_tree_pos pos);
 
 /* Tests if the tree can be shrank in half */
-static unsigned int buddy_tree_can_shrink(struct buddy_tree *t);
+ unsigned int buddy_tree_can_shrink(struct buddy_tree *t);
 
 /*
  * Debug functions
  */
 
 /* Implementation defined */
-// static void buddy_tree_debug(FILE *stream, struct buddy_tree *t, struct
+//  void buddy_tree_debug(FILE *stream, struct buddy_tree *t, struct
 // buddy_tree_pos pos, size_t start_size);
 
 /* Implementation defined */
-static unsigned int buddy_tree_check_invariant(struct buddy_tree *t,
+ unsigned int buddy_tree_check_invariant(struct buddy_tree *t,
                                                struct buddy_tree_pos pos);
 
 /* Report fragmentation in a 0.0 - 1.0 range */
-static float buddy_tree_fragmentation(struct buddy_tree *t);
+ float buddy_tree_fragmentation(struct buddy_tree *t);
 
 /*
  * A char-backed bitset implementation
  */
 
-static size_t bitset_sizeof(size_t elements);
+ size_t bitset_sizeof(size_t elements);
 
-static void bitset_set_range(unsigned char *bitset, size_t from_pos,
+ void bitset_set_range(unsigned char *bitset, size_t from_pos,
                              size_t to_pos);
 
-static void bitset_clear_range(unsigned char *bitset, size_t from_pos,
+ void bitset_clear_range(unsigned char *bitset, size_t from_pos,
                                size_t to_pos);
 
-static size_t bitset_count_range(unsigned char *bitset, size_t from_pos,
+ size_t bitset_count_range(unsigned char *bitset, size_t from_pos,
                                  size_t to_pos);
 
-static inline void bitset_set(unsigned char *bitset, size_t pos);
+ inline void bitset_set(unsigned char *bitset, size_t pos);
 
-static inline void bitset_clear(unsigned char *bitset, size_t pos);
+ inline void bitset_clear(unsigned char *bitset, size_t pos);
 
-static inline unsigned int bitset_test(const unsigned char *bitset, size_t pos);
+ inline unsigned int bitset_test(const unsigned char *bitset, size_t pos);
 
-static void bitset_shift_left(unsigned char *bitset, size_t from_pos,
+ void bitset_shift_left(unsigned char *bitset, size_t from_pos,
                               size_t to_pos, size_t by);
 
-static void bitset_shift_right(unsigned char *bitset, size_t from_pos,
+ void bitset_shift_right(unsigned char *bitset, size_t from_pos,
                                size_t to_pos, size_t by);
 
 /*
@@ -319,27 +319,27 @@ static void bitset_shift_right(unsigned char *bitset, size_t from_pos,
  */
 
 /* Implementation defined */
-// static void bitset_debug(FILE *stream, unsigned char *bitset, size_t length);
+//  void bitset_debug(FILE *stream, unsigned char *bitset, size_t length);
 
 /*
  * Bits
  */
 
 /* Returns the number of set bits in the given byte */
-static unsigned int popcount_byte(unsigned char b);
+ unsigned int popcount_byte(unsigned char b);
 
 /* Returns the index of the highest bit set (1-based) */
-static size_t highest_bit_position(size_t value);
+ size_t highest_bit_position(size_t value);
 
 /* Returns the nearest larger or equal power of two */
-static inline size_t ceiling_power_of_two(size_t value);
+ inline size_t ceiling_power_of_two(size_t value);
 
 /*
  * Math
  */
 
 /* Approximates the square root of a float */
-static inline float approximate_square_root(float f);
+ inline float approximate_square_root(float f);
 
 /*
  Implementation
@@ -370,29 +370,29 @@ struct buddy_embed_check {
   size_t buddy_size;
 };
 
-static size_t buddy_tree_order_for_memory(size_t memory_size);
-static size_t depth_for_size(struct buddy *buddy, size_t requested_size);
-static inline size_t size_for_depth(struct buddy *buddy, size_t depth);
-static unsigned char *address_for_position(struct buddy *buddy,
+ size_t buddy_tree_order_for_memory(size_t memory_size);
+ size_t depth_for_size(struct buddy *buddy, size_t requested_size);
+ inline size_t size_for_depth(struct buddy *buddy, size_t depth);
+ unsigned char *address_for_position(struct buddy *buddy,
                                            struct buddy_tree_pos pos);
-static struct buddy_tree_pos position_for_address(struct buddy *buddy,
+ struct buddy_tree_pos position_for_address(struct buddy *buddy,
                                                   const unsigned char *addr);
-static unsigned char *buddy_main(struct buddy *buddy);
-static unsigned int buddy_relative_mode(struct buddy *buddy);
-static struct buddy_tree *buddy_tree(struct buddy *buddy);
-static size_t buddy_effective_memory_size(struct buddy *buddy);
-static void buddy_toggle_virtual_slots(struct buddy *buddy, unsigned int state);
-static void buddy_toggle_range_reservation(struct buddy *buddy, void *ptr,
+ unsigned char *buddy_main(struct buddy *buddy);
+ unsigned int buddy_relative_mode(struct buddy *buddy);
+ struct buddy_tree *buddy_tree(struct buddy *buddy);
+ size_t buddy_effective_memory_size(struct buddy *buddy);
+ void buddy_toggle_virtual_slots(struct buddy *buddy, unsigned int state);
+ void buddy_toggle_range_reservation(struct buddy *buddy, void *ptr,
                                            size_t requested_size,
                                            unsigned int state);
-static struct buddy *buddy_resize_standard(struct buddy *buddy,
+ struct buddy *buddy_resize_standard(struct buddy *buddy,
                                            size_t new_memory_size);
-static struct buddy *buddy_resize_embedded(struct buddy *buddy,
+ struct buddy *buddy_resize_embedded(struct buddy *buddy,
                                            size_t new_memory_size);
-static unsigned int buddy_is_free(struct buddy *buddy, size_t from);
-static unsigned int buddy_is_left_biased(struct buddy *buddy);
-static struct buddy_embed_check buddy_embed_offset(size_t memory_size);
-static struct buddy_tree_pos deepest_position_for_offset(struct buddy *buddy,
+ unsigned int buddy_is_free(struct buddy *buddy, size_t from);
+ unsigned int buddy_is_left_biased(struct buddy *buddy);
+ struct buddy_embed_check buddy_embed_offset(size_t memory_size);
+ struct buddy_tree_pos deepest_position_for_offset(struct buddy *buddy,
                                                          size_t offset);
 
 #endif /* BUDDY_ALLOC_IMPLEMENTATION */

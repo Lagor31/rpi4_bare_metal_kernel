@@ -94,7 +94,7 @@ void FBInit() {
     Console::print("Frame buffer allocated!\nW: %d H: %d Pitch: %d RGB %d\n",
                    width, height, pitch, isrgb);
 
-    char* core[] = {"Core0 ", "Core1 ", "Core2 ", "Core3 "};
+    const char* core[] = {"Core0 ", "Core1 ", "Core2 ", "Core3 "};
     for (int c = 0; c < 4; ++c)
       drawString(860 + c * 50, 0, core[c], getCoreColor(c));
 
@@ -212,7 +212,7 @@ bool drawChar(unsigned char ch, int x, int y, unsigned char attr) {
   return true;
 }
 
-void drawString(int x, int y, char* s, unsigned char attr) {
+void drawString(int x, int y, const char* s, unsigned char attr) {
   while (*s) {
     if (*s == '\r') {
       x = 0;

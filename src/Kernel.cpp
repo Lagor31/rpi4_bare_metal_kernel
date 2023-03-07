@@ -1,13 +1,14 @@
 #include "include/BootAllocator.h"
 #include "include/Console.h"
 #include "include/Core.h"
+#include "include/FrameBuffer.h"
 #include "include/GIC.h"
 #include "include/GPIO.h"
 #include "include/IRQ.h"
 #include "include/KernelHeapAllocator.h"
 #include "include/Lists/ArrayList.hpp"
-#include "include/Mem.h"
 #include "include/MMU.h"
+#include "include/Mem.h"
 #include "include/RedFS.h"
 #include "include/SMP.h"
 #include "include/Spinlock.h"
@@ -18,13 +19,13 @@
 #include "include/Uart.h"
 #include "include/Vector.h"
 #include "include/buddy_alloc.h"
-#include "include/FrameBuffer.h"
 
 #define PACKED __attribute((__packed__))
 
 #define BUDDY_ALLOC_IMPLEMENTATION
 
 using SD::Lists::SinglyLinkedList;
+#include "include/String.h"
 
 extern void* _boot_alloc_start;
 extern void* _boot_alloc_end;
@@ -62,7 +63,7 @@ extern "C" void kernel_main() {
   Core::disableIRQ();
 
   BootAllocator boot_allocator = BootAllocator(
-    (unsigned char*)&_boot_alloc_start, (unsigned char*)&_boot_alloc_end);
+      (unsigned char*)&_boot_alloc_start, (unsigned char*)&_boot_alloc_end);
 
   GlobalKernelAlloc::setAllocator(&boot_allocator);
 
@@ -84,12 +85,12 @@ extern "C" void kernel_main() {
   Console::print("Current EL: %u\n", Std::getCurrentEL());
 
   Console::print("BootAlloc Start: 0x%x BootAlloc end: 0x%x\n",
-    &_boot_alloc_start, &_boot_alloc_end);
+                 &_boot_alloc_start, &_boot_alloc_end);
   Console::print("Heap Start: 0x%x Heap end: 0x%x\n",
-    (unsigned char*)&_heap_start, (unsigned char*)&_heap_end);
+                 (unsigned char*)&_heap_start, (unsigned char*)&_heap_end);
 
   KernelHeapAllocator* kha = new KernelHeapAllocator(
-    (unsigned char*)&_heap_start, (unsigned char*)&_heap_end);
+      (unsigned char*)&_heap_start, (unsigned char*)&_heap_end);
   GlobalKernelAlloc::setAllocator(kha);
   Console::print("Free Mem Bytes: %d\n", GlobalKernelAlloc::freeSpace());
   Console::print("List of loaded drivers:\n");
@@ -110,11 +111,9 @@ extern "C" void kernel_main() {
   Task* idle = Task::createKernelTask((uint64_t)&idleTask);
   Core::runningQ[get_core()]->insert(idle);
 
-  Task* n;
   for (int i = 0; i < THREAD_N; ++i) {
     Task* t = Task::createKernelTask((uint64_t)&kernelTask);
     Core::runningQ[get_core()]->insert(t);
-    if (i == 0) n = t;
   }
 
   Task* screen = Task::createKernelTask((uint64_t)&screenTask);
@@ -133,7 +132,6 @@ extern "C" void kernel_main() {
   Console::print("All cores UP!\n");
   Core::spinms(100);
   Core::enableIRQ();
-
   SystemTimer::WaitMicroT1(100000);
 
   _hang_forever();

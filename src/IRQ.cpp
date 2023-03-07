@@ -13,7 +13,6 @@
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
 #include "include/Vector.h"
-
 #include "include/sysregs.h"
 
 using SD::Lists::ArrayList;
@@ -70,7 +69,7 @@ void wakeUpTimers() {
   */
   Core::sleepingQLock->getLock();
 
-  for (int i = 0; i < Core::sleepingQ->count(); ++i) {
+  for (uint32_t i = 0; i < Core::sleepingQ->count(); ++i) {
     uint64_t cTimer = Core::sleepingQ->get(i)->timer;
     if (cTimer != 0 && cTimer <= SystemTimer::getTimer()->counter_lo) {
       Task* t = Core::sleepingQ->get(i);
@@ -117,20 +116,14 @@ void reschedule(CoreContext* regs) {
 extern "C" void irq_handler_spx(CoreContext* regs) {
   unsigned int irq_ack_reg = MMIO::read(GICC_IAR);
   unsigned int irq = irq_ack_reg & 0x3FF;
-  unsigned int cpu = (irq_ack_reg >> 10) & 7;
 
-  Task* next;
-  uint64_t c;
   rpi_sys_timer_t* timer;
 
-  uint32_t index = 0;
-  uint32_t remCount = 0;
+  /* Wake up expired timers */
+  wakeUpTimers();
 
   switch (irq) {
     case (SYSTEM_TIMER_IRQ_1):
-
-      /* Wake up expired timers */
-      wakeUpTimers();
 
       /* We reschedule */
       reschedule(regs);
@@ -151,14 +144,16 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
       break;
 
     case SYS_TIMER_IRQ_3:
-          SystemTimer::getTimer()->control_status |= 0b1000;
-    break;
+      Console::print_no_lock("Received Timer interrupt 3 on Core%d\n",
+                             get_core());
+      SystemTimer::getTimer()->control_status |= 0b1000;
+      break;
 
     case SYSTEM_SLEEP_IRQ:
 
       Core::runningQLock[get_core()]->getLock();
       // Putting current to sleep
-      for (int i = 0; i < Core::runningQ[get_core()]->count(); ++i) {
+      for (uint32_t i = 0; i < Core::runningQ[get_core()]->count(); ++i) {
         if (Core::current[get_core()]->pid ==
             Core::runningQ[get_core()]->get(i)->pid) {
           Core::runningQ[get_core()]->remove(i);
@@ -249,11 +244,7 @@ void printRegs(CoreContext* regs) {
 }
 
 extern "C" void sync_handler_sp0(CoreContext* regs) {
-  unsigned long add = get_far_el1();
-  unsigned long cause = get_esr_el1();
-  unsigned long ret = get_elr_el1();
-
-  int i = 0;
+  uint32_t i = 0;
   for (; i < 4; ++i) {
     if (get_core() != i) GIC400::send_sgi(1, i);
   }
@@ -283,10 +274,7 @@ extern "C" void serror_handler_sp0() {
 }
 
 extern "C" void sync_handler_spx(CoreContext* regs) {
-  unsigned long add = get_far_el1();
-  unsigned long cause = get_esr_el1();
-  unsigned long ret = get_elr_el1();
-  int i = 0;
+  uint32_t i = 0;
   for (; i < 4; ++i) {
     if (get_core() != i) GIC400::send_sgi(1, i);
   }

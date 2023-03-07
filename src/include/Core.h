@@ -8,7 +8,7 @@
 #include "Task.h"
 using SD::Lists::SinglyLinkedList;
 
-#define THREAD_N 20
+#define THREAD_N 10
 
 class Core {
 public:

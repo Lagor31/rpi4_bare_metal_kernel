@@ -57,7 +57,8 @@ uint64_t SystemTimer::getCounter() {
     hi = rpiSystemTimer->counter_hi;
   } while (hi != rpiSystemTimer->counter_hi);
 
-  uint64_t out = (hi << (static_cast<uint64_t>(32)));
+  uint64_t out = hi;
+  out <<= (static_cast<uint64_t>(32));
   out += lo;
   return out;
 }
