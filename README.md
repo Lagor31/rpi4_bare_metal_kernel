@@ -5,6 +5,7 @@
 - Interrupts (GIC400)
 - Multicore
 - Virtual memory & MMU
+- Buddy Allocator
 - Synchronization (ARM Spinlock)
 - UART RX/TX
 - Videocore VI Mailbox Interface
