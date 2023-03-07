@@ -5,14 +5,20 @@ C/C++ Raspberry Pi 4B Kernel
 - Multicore
 - Virtual memroy MMU
 - Synchronization (ARM Spinlock)
-- Uart
-- Mailbox
+- UART RX/TX
+- Videocore 6 Mailbox Interface
 - Framebuffer
 
 Debugged on live hardware with OpenOCD + JTAGS + Olimex Tiny H (https://www.olimex.com/Products/ARM/JTAG/ARM-USB-TINY-H/)
-Install openocd from sources with     ./configure --enable-ftdi;                               
+Install openocd from sources with **./configure --enable-ftdi;**
 
-I/O Through MiniUART/USB with minicom
-sudo minicom -D /dev/ttyUSB0 --baudrate 11520
+I/O Through MiniUART to USB with **minicom**
+**sudo minicom -D /dev/ttyUSB0 --baudrate 11520**
 
+TODO:
+- EMMC Driver
+- Custom filesystem
+- Usermode Tasks
+- Networking
+- USB Driver
 [Work in progres...]
