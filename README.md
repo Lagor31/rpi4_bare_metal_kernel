@@ -35,7 +35,7 @@ sudo minicom -D /dev/ttyUSB0 --baudrate 11520
 - Slab Allocator
 - On Disk Paging
 - Usermode Tasks
-- Networking
+- Networking (Ethernet, ARP, UDP, DHCP)
 - USB Driver
 - (...)
 
