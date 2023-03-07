@@ -2,7 +2,7 @@
 #define UART_H
 
 #include "Console.h"
-#include "Gpio.h"
+#include "GPIO.h"
 #include "Mem.h"
 
 #define AUX_MU_BAUD(baud) ((AUX_UART_CLOCK / (baud * 8)) - 1)

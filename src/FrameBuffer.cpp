@@ -1,24 +1,24 @@
-#include "include/fb.h"
+#include "include/FrameBuffer.h"
 
 #include "include/Console.h"
 #include "include/Core.h"
 #include "include/Mem.h"
 #include "include/Spinlock.h"
-#include "include/io.h"
-#include "include/mb.h"
-#include "include/terminal.h"
+#include "include/IO.h"
+#include "include/Mailbox.h"
+#include "include/Terminal.h"
 
 using SD::Lists::SinglyLinkedList;
 
-SinglyLinkedList<Circle *> *circles;
+SinglyLinkedList<Circle*>* circles;
 
 unsigned int width, height, pitch, isrgb;
-unsigned char *fb;
-unsigned char *kernelFb;
+unsigned char* fb;
+unsigned char* kernelFb;
 
-Spinlock *fb_lock;
+Spinlock* fb_lock;
 
-void fb_init() {
+void FBInit() {
   fb_lock = new Spinlock();
   mbox[0] = 35 * 4;  // Length of message in bytes
   mbox[1] = MBOX_REQUEST;
@@ -71,22 +71,23 @@ void fb_init() {
     height = mbox[11];       // Actual physical height
     pitch = mbox[33];        // Number of bytes per line
     isrgb = mbox[24];        // Pixel order
-    fb = 0xffff000000000000 + (unsigned char *)((long)mbox[28]);
-    kernelFb = (uint8_t *)GlobalKernelAlloc::alloc(4 * width * height);
+    fb = 0xffff000000000000 + (unsigned char*)((long)mbox[28]);
+    kernelFb = (uint8_t*)GlobalKernelAlloc::alloc(4 * width * height);
 
-    circles = new SinglyLinkedList<Circle *>();
+    circles = new SinglyLinkedList<Circle*>();
 
     // for (int c = 0; c < 4 * width * height; ++c) fb[c] = 0xeE;
     Console::print("Frame buffer allocated!\nW: %d H: %d Pitch: %d RGB %d\n",
-                   width, height, pitch, isrgb);
-  } else
+      width, height, pitch, isrgb);
+  }
+  else
     Core::panic("Error allocating framebuffer!\n");
 }
 
 void drawPixel(int x, int y, unsigned char attr) {
   int offs = (y * pitch) + (x * 4);
   // fb_lock->getLock();
-  *((unsigned int *)(fb + offs)) = vgapal[attr & 0x0f];
+  *((unsigned int*)(fb + offs)) = vgapal[attr & 0x0f];
   RPIQ_INVAL_DCACHE(fb + offs);
   RPIQ_MEM_BARRIER();
   // fb_lock->release();
@@ -122,7 +123,8 @@ void drawLine(int x1, int y1, int x2, int y2, unsigned char attr) {
       drawPixel(x, y, attr);
       y++;
       p = p + 2 * dy - 2 * dx;
-    } else {
+    }
+    else {
       drawPixel(x, y, attr);
       p = p + 2 * dy;
     }
@@ -130,7 +132,7 @@ void drawLine(int x1, int y1, int x2, int y2, unsigned char attr) {
   }
 }
 
-void paintCircle(Circle *c) {
+void paintCircle(Circle* c) {
   // Core::preemptDisable();
 
   fb_lock->getLock();
@@ -178,35 +180,35 @@ void drawCircle(int x0, int y0, int radius, unsigned char attr, int fill) {
 }
 
 bool drawChar(unsigned char ch, int x, int y, unsigned char attr) {
-  static char *g;
+  static char* g;
 
   switch (ch) {
-    case 'f':
-      g = f_bits;
-      break;
-    case 'e':
-      g = e_bits;
-      break;
-    case 'd':
-      g = d_bits;
-      break;
-    case 'F':
-      g = F_bits;
-      break;
-    default:
-      return false;
+  case 'f':
+    g = f_bits;
+    break;
+  case 'e':
+    g = e_bits;
+    break;
+  case 'd':
+    g = d_bits;
+    break;
+  case 'F':
+    g = F_bits;
+    break;
+  default:
+    return false;
   }
 
   uint32_t pX = x;
   uint32_t pY = y;
-  char *glyph = g;
+  char* glyph = g;
 
   for (int i = 0; i < FONT_HEIGHT; i++) {
     for (int j = 0; j < FONT_BPL; j++) {
       for (int l = 0; l < 8; l++) {
         unsigned char mask = 1 << l;
         unsigned char col =
-            (glyph[i * 2 + j] & mask) ? attr & 0x0f : (attr & 0xf0) >> 4;
+          (glyph[i * 2 + j] & mask) ? attr & 0x0f : (attr & 0xf0) >> 4;
         drawPixel(pX + l, pY + i, col);
       }
       pX += 8;
@@ -216,14 +218,16 @@ bool drawChar(unsigned char ch, int x, int y, unsigned char attr) {
   return true;
 }
 
-void drawString(int x, int y, char *s, unsigned char attr) {
+void drawString(int x, int y, char* s, unsigned char attr) {
   while (*s) {
     if (*s == '\r') {
       x = 0;
-    } else if (*s == '\n') {
+    }
+    else if (*s == '\n') {
       x = 0;
       y += FONT_HEIGHT;
-    } else {
+    }
+    else {
       drawChar(*s, x, y, attr);
       x += FONT_WIDTH;
     }

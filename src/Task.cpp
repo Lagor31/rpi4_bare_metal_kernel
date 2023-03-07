@@ -9,9 +9,9 @@
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
 #include "include/buddy_alloc.h"
-#include "include/fb.h"
-#include "include/io.h"
-#include "include/mb.h"
+#include "include/FrameBuffer.h"
+#include "include/IO.h"
+#include "include/Mailbox.h"
 
 extern "C" uint64_t core_activations[4];
 extern "C" uint64_t get_sp();

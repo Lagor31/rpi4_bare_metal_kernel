@@ -13,8 +13,7 @@
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
 #include "include/Vector.h"
-#include "include/fb.h"
-#include "include/io.h"
+
 #include "include/sysregs.h"
 
 using SD::Lists::ArrayList;
@@ -150,6 +149,10 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
     case SYSTEM_RESCHEDULE_IRQ:
       reschedule(regs);
       break;
+
+    case SYS_TIMER_IRQ_3:
+          SystemTimer::getTimer()->control_status |= 0b1000;
+    break;
 
     case SYSTEM_SLEEP_IRQ:
 

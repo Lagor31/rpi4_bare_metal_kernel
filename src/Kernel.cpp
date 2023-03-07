@@ -2,7 +2,7 @@
 #include "include/Console.h"
 #include "include/Core.h"
 #include "include/GIC.h"
-#include "include/Gpio.h"
+#include "include/GPIO.h"
 #include "include/IRQ.h"
 #include "include/KernelHeapAllocator.h"
 #include "include/Lists/ArrayList.hpp"
@@ -18,8 +18,7 @@
 #include "include/Uart.h"
 #include "include/Vector.h"
 #include "include/buddy_alloc.h"
-#include "include/emmc.h"
-#include "include/fb.h"
+#include "include/FrameBuffer.h"
 
 #define PACKED __attribute((__packed__))
 
@@ -98,89 +97,11 @@ extern "C" void kernel_main() {
     Console::print("Driver %s\n", d->getName());
 
   initSchedLock();
-  fb_init();
+  FBInit();
 
   Console::print("Timer init on core: %d\n", get_core());
   Console::print("############################################\n");
-  /*
-    if (!emmc_init(gpio)) {
-      Console::print("FAILED TO INIT EMMC\n");
-      Core::panic("FAILED TO INIT EMMC\n");
-    }
 
-    master_boot_record mbr;
-    emmc_read((uint8_t *)&mbr, sizeof(mbr));
-
-    if (mbr.bootSignature != BOOT_SIGNATURE) {
-      Console::print("BAD BOOT SIGNATURE: %X\n", mbr.bootSignature);
-    }
-    int lagorPLBAStart = 0;
-    for (int i = 0; i < 4; i++) {
-      if (mbr.partitions[i].type == 0) {
-        break;
-      }
-
-      Console::print("Partition %d:\n", i);
-      Console::print("\t Type: %x\n", mbr.partitions[i].type);
-      Console::print("\t NumSecs: %d\n", mbr.partitions[i].num_sectors);
-      Console::print("\t Status: %d\n", mbr.partitions[i].status);
-      Console::print("\t Start: %d\n", mbr.partitions[i].first_lba_sector);
-      if (mbr.partitions[i].type == 0x31) {
-        Console::print("Found Lagor 0x31 partition starting at LBA: %d\n",
-                       mbr.partitions[i].first_lba_sector);
-        lagorPLBAStart = mbr.partitions[i].first_lba_sector;
-        emmc_seek(lagorPLBAStart * 512);
-      }
-    }
-
-    emmc_seek(lagorPLBAStart * 512);
-    SuperBlock *sb = (SuperBlock *)GlobalKernelAlloc::alloc(512);
-    emmc_read((uint8_t *)sb, 512);
-    if (sb->signature[0] != 'L' && sb->signature[1] != 'a' &&
-        sb->signature[2] != 'g' && sb->signature[3] != 'o' &&
-        sb->signature[4] != 'r')
-      Core::panic("Invalid RedFS Partition signature!");
-
-    Console::print(
-        "Tot Pools: %d\nINodes Tot: %d, INode Size: %d, INodes in Pool: %d, "
-        "INodes Free: %d\n",
-        sb->total_pools, sb->inodes_total, sb->inode_size, sb->inodes_in_pool,
-        sb->inodes_free);
-
-    Console::print(
-        "Blocks Tot: %d, Block Size: %d, Blocks in Pool: %d, "
-        "Blocks Free: %d\n",
-        sb->blocks_total, sb->block_size, sb->blocks_in_pool, sb->blocks_free);
-    // emmc_write((uint8_t *)&mbr, sizeof(mbr));
-    emmc_seek(lagorPLBAStart * 512 + 512);
-
-    Console::print("Inode struct size: %d\n", sizeof(INode));
-    // Reading INode 0 (root)
-    INode *rootI = (INode *)GlobalKernelAlloc::alloc(sizeof(INode) * 4);
-    emmc_read((uint8_t *)rootI, 512);
-
-    if (rootI->signature != 0xEEEE) Core::panic("Wrong root INode signature!");
-    uint32_t inode_table_offset = lagorPLBAStart * 512 + 512;
-
-    emmc_seek(inode_table_offset);
-    for (int p = 0; p < 1; ++p) {
-      for (int i = 0; i < sb->inodes_in_pool / 4; ++i) {
-        emmc_read((uint8_t *)rootI, 512);
-        for (int c = 0; c < 4; ++c) {
-          if (rootI[c].signature == 0xEEEE)
-            Console::print("Found INode %d Perm: 0x%x Block0: %d\n", (i * 4) +
-    c, rootI[c].permissions, rootI[c].block0);
-        }
-        inode_table_offset += 512;
-        emmc_seek(inode_table_offset);
-      }
-      inode_table_offset = lagorPLBAStart * 512 + 512 +
-                           ((p + 1) * (sb->inodes_in_pool * sb->inode_size +
-                                       sb->blocks_in_pool * sb->block_size));
-      emmc_seek(inode_table_offset);
-    }
-
-   */
   for (int i = 0; i < 4; ++i) Core::runningQLock[i] = new Spinlock();
   Core::sleepingQLock = new Spinlock();
 
@@ -195,6 +116,7 @@ extern "C" void kernel_main() {
     Core::runningQ[get_core()]->insert(t);
     if (i == 0) n = t;
   }
+
   Task* screen = Task::createKernelTask((uint64_t)&screenTask);
   Core::runningQ[get_core()]->insert(screen);
   Core::current[get_core()] = new Task();

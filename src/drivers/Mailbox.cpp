@@ -1,5 +1,5 @@
-#include "include/Mem.h"
-#include "include/io.h"
+#include "../include/Mem.h"
+#include "../include/IO.h"
 // The buffer must be 16-byte aligned as only the upper 28 bits of the address
 // can be passed via the mailbox
 volatile unsigned int __attribute__((aligned(16))) mbox[36];

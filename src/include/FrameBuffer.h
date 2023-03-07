@@ -16,7 +16,7 @@ typedef struct circle_t {
 } Circle;
 using SD::Lists::SinglyLinkedList;
 void paintCircle(Circle *c);
-void fb_init();
+void FBInit();
 void drawPixel(int x, int y, unsigned char attr);
 bool drawChar(unsigned char ch, int x, int y, unsigned char attr);
 void drawString(int x, int y, char *s, unsigned char attr);

@@ -6,45 +6,45 @@
 #include "../include/Mem.h"
 #include "../include/SystemTimer.h"
 
-GIC400::GIC400(){};
+GIC400::GIC400() {};
 
 void GIC400::print_gic_state() {
   /*
   GICC_CTLR: 00000001 GICC_PMR:    000000f8 GICC_BPR: 00000002
-GICC_RPR:  000000ff GICC_HPPIR:  000003ff
-GICC_ABPR: 00000003 GICC_AHPPIR: 000003ff
+  GICC_RPR:  000000ff GICC_HPPIR:  000003ff
+  GICC_ABPR: 00000003 GICC_AHPPIR: 000003ff
 
-GICD_CTLR:        00000001 GICD_TYPER:      0000fc67 GICD_IGROUPR0:   00000000
-GICD_ISENABLER0:  0000ffff GICD_ISPENDR0:   00000000 GICD_ISACTIVER0: 00000000
-GICD_IPRIORITYR0: 00000000 GICD_ITARGETSR0: 01010101 GICD_ICFGR0:     aaaaaaaa
-GICD_PPISR:       00000000 GICD_SPISR0:     00000000 GICD_SPENSGIR0:  00000000
+  GICD_CTLR:        00000001 GICD_TYPER:      0000fc67 GICD_IGROUPR0:   00000000
+  GICD_ISENABLER0:  0000ffff GICD_ISPENDR0:   00000000 GICD_ISACTIVER0: 00000000
+  GICD_IPRIORITYR0: 00000000 GICD_ITARGETSR0: 01010101 GICD_ICFGR0:     aaaaaaaa
+  GICD_PPISR:       00000000 GICD_SPISR0:     00000000 GICD_SPENSGIR0:  00000000
   */
 
   uint64_t reg = GICD_DIST_BASE + 8;
 
   Console::print(
-      "############################################\n\nGICC_CTLR: 0x%x  "
-      "GICC_PMR: 0x%x  GICC_BPR: 0x%x\n",
-      gic400.gicc->ctl, gic400.gicc->pm, gic400.gicc->bp);
+    "############################################\n\nGICC_CTLR: 0x%x  "
+    "GICC_PMR: 0x%x  GICC_BPR: 0x%x\n",
+    gic400.gicc->ctl, gic400.gicc->pm, gic400.gicc->bp);
   Console::print("GICID 0x%x OTHER: 0x%x\n", gic400.gicd->iid, MMIO::read(reg));
 
   Console::print("GICC_RPR: 0x%x  GICC_HPPIR: 0x%x\n", gic400.gicc->rp,
-                 gic400.gicc->hppi);
+    gic400.gicc->hppi);
   Console::print("GICC_ABPR: 0x%x  GICC_AHPPIR: 0x%x\n\n", gic400.gicc->abp,
-                 gic400.gicc->ahppi);
+    gic400.gicc->ahppi);
 
   Console::print("GICD_CTLR: 0x%x  GICD_TYPE: 0x%x  GICD_IGGRP0: 0x%x\n",
-                 gic400.gicd->ctl, gic400.gicd->type, gic400.gicd->igroup[0]);
+    gic400.gicd->ctl, gic400.gicd->type, gic400.gicd->igroup[0]);
   Console::print(
-      "GICD_ISENABLER0: 0x%x  GICD_ISPEND0: 0x%x  GICD_ISACTIVE: 0x%x\n",
-      gic400.gicd->isenable[0], gic400.gicd->ispend[0],
-      gic400.gicd->isactive[0]);
+    "GICD_ISENABLER0: 0x%x  GICD_ISPEND0: 0x%x  GICD_ISACTIVE: 0x%x\n",
+    gic400.gicd->isenable[0], gic400.gicd->ispend[0],
+    gic400.gicd->isactive[0]);
   Console::print("GICD_IPRI0: 0x%x  GICD_ITARGET0: 0x%x  GICD_ICFGR0: %x\n",
-                 gic400.gicd->ipriority[0], gic400.gicd->istargets[0],
-                 gic400.gicd->icfg[0]);
+    gic400.gicd->ipriority[0], gic400.gicd->istargets[0],
+    gic400.gicd->icfg[0]);
   Console::print("GICD_PPIS: 0x%x  GICD_SPI0: 0x%x  GICD_SPENSGI0: 0x%x\n",
-                 gic400.gicd->ppis, gic400.gicd->spis[0],
-                 gic400.gicd->spendsgi[0]);
+    gic400.gicd->ppis, gic400.gicd->spis[0],
+    gic400.gicd->spendsgi[0]);
 }
 
 void GIC400::enable_interrupt(unsigned int irq) {
@@ -93,38 +93,31 @@ void GIC400::init() {
   MMIO::write(((long)&gic400.gicc->pm), 0x0000FFu);
 
   gic400.gicc->bp = 2;
-  // gic400.gicd->sgi |= (1 << 24);
 
   assign_target(SYSTEM_TIMER_IRQ_1, 0);
   enable_interrupt(SYSTEM_TIMER_IRQ_1);
 
- /*  assign_target(SYSTEM_TIMER_IRQ_3, 3);
-  enable_interrupt(SYSTEM_TIMER_IRQ_3); */
-  
-  //Uart rec
-  assign_target(125, 0);
-  enable_interrupt(125);
+  assign_target(SYSTEM_UARTRX_IRQ, 0);
+  enable_interrupt(SYSTEM_UARTRX_IRQ);
 
-  assign_target(2, 2);
-  assign_target(2, 1);
-  assign_target(2, 3);
+  assign_target(SYSTEM_RESCHEDULE_IRQ, 2);
+  assign_target(SYSTEM_RESCHEDULE_IRQ, 1);
+  assign_target(SYSTEM_RESCHEDULE_IRQ, 3);
+  enable_interrupt(SYSTEM_RESCHEDULE_IRQ);
 
-  assign_target(1, 0);
-  assign_target(1, 2);
-  assign_target(1, 1);
-  assign_target(1, 3);
-  // enable_interrupt(1);
+  assign_target(SYSTEM_HALT_IRQ, 0);
+  assign_target(SYSTEM_HALT_IRQ, 2);
+  assign_target(SYSTEM_HALT_IRQ, 1);
+  assign_target(SYSTEM_HALT_IRQ, 3);
+  enable_interrupt(SYSTEM_HALT_IRQ);
 
-  assign_target(3, 0);
-  assign_target(3, 1);
-  assign_target(3, 2);
-  assign_target(3, 3);
-  enable_interrupt(3);
+  assign_target(SYSTEM_SLEEP_IRQ, 0);
+  assign_target(SYSTEM_SLEEP_IRQ, 1);
+  assign_target(SYSTEM_SLEEP_IRQ, 2);
+  assign_target(SYSTEM_SLEEP_IRQ, 3);
+  enable_interrupt(SYSTEM_SLEEP_IRQ);
 
-  enable_interrupt(2);
-  enable_interrupt(1);
-  /*assign_target(2, 3); */
-  // enable_interrupt(2);
+
   gic400.gicc->ctl = GIC400_CTL_ENABLE;
   gic400.gicd->ctl = GIC400_CTL_ENABLE;
 }

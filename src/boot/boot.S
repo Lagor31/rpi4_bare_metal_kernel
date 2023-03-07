@@ -16,8 +16,11 @@
 
 _start:   
 
-/*     wfe
-    b _start */
+    /*     
+    wfe
+    b _start 
+    */
+
     //w0 = dtb addr 32 bit
     //In our setup, only core0@EL3 gets here
 
@@ -196,12 +199,12 @@ map_identity:
     
     /* changes tmp1, tmp2 only */
     //.macro create_table_entry, tbl, ntbl, va, shift, flags, tmp1, tmp2
-/*
-tbl - a pointer to a memory region were new table has to be allocated.
-virt - virtual address that we are currently mapping.
-shift - shift that we need to apply to the virtual address in order to extract current table index. (39 in case of PGD and 30 in case of PUD)
-tmp1, tmp2 - temporary registers.
- */
+    /*
+    tbl - a pointer to a memory region were new table has to be allocated.
+    virt - virtual address that we are currently mapping.
+    shift - shift that we need to apply to the virtual address in order to extract current table index. (39 in case of PGD and 30 in case of PUD)
+    tmp1, tmp2 - temporary registers.
+    */
     create_table_entry x0, x1, x4, PGD_SHIFT, TD_KERNEL_TABLE_FLAGS, x2, x3
     /* goto next level */
     add x0, x0, #PAGE_SIZE
@@ -368,13 +371,6 @@ map_high:
 	mov	x0,  sp
 .endm
 
-/* hang:
-    _kernel_entry
-    bl panic
- 1:    
-    wfi
-    b     1b  */
-
 /*
     IRQ Handlers
 */
@@ -426,6 +422,7 @@ sync_aarch32:
 /*
     FIQ Handlers
 */
+
 fiq_sp0:
     _kernel_entry
     bl  fiq_handler_sp0

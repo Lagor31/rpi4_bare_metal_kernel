@@ -1,6 +1,6 @@
 #include "../include/Uart.h"
 
-#include "../include/Gpio.h"
+#include "../include/GPIO.h"
 #include "../include/Mem.h"
 
 unsigned char UART::uart_output_queue[];
@@ -16,8 +16,8 @@ void UART::init() {
   MMIO::write(AUX_MU_IER_REG, 0xD);
   // MMIO::write(AUX_MU_IIR_REG, 0xC6);  // disable interrupts
   MMIO::write(AUX_MU_BAUD_REG, AUX_MU_BAUD(115200));
-  gpio->gpio_useAsAlt5(14);
-  gpio->gpio_useAsAlt5(15);
+  gpio->useAsAlt5(14);
+  gpio->useAsAlt5(15);
   MMIO::write(AUX_MU_CNTL_REG, 3);  // enable RX/TX
 }
 
