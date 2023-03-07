@@ -1,5 +1,5 @@
 #include "../include/sysregs.h"
-#include "../include/Mmu.h"
+#include "../include/MMU.h"
 
 .section ".text"
 

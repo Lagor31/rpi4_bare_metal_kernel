@@ -7,7 +7,7 @@
 #include "include/KernelHeapAllocator.h"
 #include "include/Lists/ArrayList.hpp"
 #include "include/Mem.h"
-#include "include/Mmu.h"
+#include "include/MMU.h"
 #include "include/RedFS.h"
 #include "include/SMP.h"
 #include "include/Spinlock.h"
