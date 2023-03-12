@@ -33,15 +33,15 @@ void screenTask() {
     /* Console::print("Screen Task PID=%d Core=%d\n",
                    Core::current[get_core()]->pid, get_core()); */
     fb_lock->getLock();
-    if (circles->count() > 0) {
-      drawMe = circles->get(0);
+    if (circles->getSize() > 0) {
+      drawMe = *circles->get(0);
 
       Core::disableIRQ();
       circles->remove(0);
       Core::enableIRQ();
 
       Core::preemptDisable();
-      drawCircle(drawMe->x, drawMe->y, drawMe->radius, drawMe->attr,
+      drawCircle(drawMe->x, drawMe->y, drawMe->radius, getCoreColor(get_core()),
                  drawMe->fill);
       Core::disableIRQ();
       delete drawMe;
@@ -66,7 +66,6 @@ void kernelTask() {
     Core::disableIRQ();
     Circle* paintMe = (Circle*)GlobalKernelAlloc::alloc(sizeof(Circle));
     Core::enableIRQ();
-
     paintMe->x = x;
     paintMe->y = y;
     paintMe->attr = getCoreColor(core);
@@ -78,20 +77,12 @@ void kernelTask() {
   _hang_forever();
 }
 
-void Task::sleep(uint32_t ms) {
+void Task::sleep(uint64_t ms) {
   rpi_sys_timer_t* timer;
 
   Task* curr = Core::current[get_core()];
+  curr->timer = SystemTimer::getCounter() + ms * (uint64_t)1000;
 
-  timer = SystemTimer::getTimer();
-  uint32_t lo;
-  uint32_t hi;
-
-  do {
-    lo = timer->counter_lo;
-    hi = timer->counter_hi;
-  } while (hi != timer->counter_hi);
-  curr->timer = lo + ms * (uint32_t)1000;
   GIC400::send_sgi(SYSTEM_SLEEP_IRQ, get_core());
 }
 
@@ -102,12 +93,10 @@ Task::Task() { c = 0; }
 Task* Task::createKernelTask(uint64_t entryPoint) {
   Task* out = new Task();
   out->context.lr = entryPoint;
-  out->second.lr = entryPoint;
   out->context.elr_el1 = entryPoint;
   uint64_t stack = (uint64_t)GlobalKernelAlloc::alloc(4096);
   stack += 4096;
   out->context.sp_el0 = stack;
-  out->second.sp = stack;
   // 0x364 int enabled
   out->context.sprs_el1 = 0x364;
   out->pid = Task::freePID++;

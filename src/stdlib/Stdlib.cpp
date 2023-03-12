@@ -1,10 +1,8 @@
 #include "../include/Stdlib.h"
 
-#include "../include/Lists/ArrayList.hpp"
 #include "../include/Task.h"
 #include "../include/Console.h"
 
-using SD::Lists::ArrayList;
 
 unsigned long Std::getCurrentEL() {
   register unsigned long x0 __asm__("x0");

@@ -6,9 +6,8 @@
 #include "include/Core.h"
 #include "include/GIC.h"
 #include "include/IRQ.h"
-#include "include/Lists/ArrayList.hpp"
+#include "include/List.h"
 #include "include/Stdlib.h"
-using SD::Lists::SinglyLinkedList;
 
 extern "C" void _wait_for_interrupt();
 extern void kernelThread();
@@ -18,21 +17,21 @@ extern "C" void initSecondaryCore() {
 
   // Core::runningQ[core] = new Vector<Task *>();
   //  if (core != 1) _wait_for_interrupt();
-  Core::runningQ[get_core()] = new SinglyLinkedList<Task*>();
+  Core::runningQ[get_core()] = new ArrayList<Task*>();
 
   // if (core == 3) {
   Task* idle = Task::createKernelTask((uint64_t)&idleTask);
-  Core::runningQ[core]->insert(idle);
+  Core::runningQ[core]->add(idle);
 
   for (int i = 0; i < THREAD_N; ++i) {
     Task* t = Task::createKernelTask((uint64_t)&kernelTask);
-    Core::runningQ[core]->insert(t);
+    Core::runningQ[core]->add(t);
   }
 
   // if (core == 3) {
   Task* screen = Task::createKernelTask((uint64_t)&screenTask);
-  Core::runningQ[core]->insert(screen);
-  //}
+  Core::runningQ[core]->add(screen);
+  // }
   Core::current[core] = new Task();
   Console::print("@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
                  core);

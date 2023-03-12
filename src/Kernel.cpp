@@ -6,7 +6,7 @@
 #include "include/GPIO.h"
 #include "include/IRQ.h"
 #include "include/KernelHeapAllocator.h"
-#include "include/Lists/ArrayList.hpp"
+#include "include/List.h"
 #include "include/MMU.h"
 #include "include/Mem.h"
 #include "include/RedFS.h"
@@ -17,14 +17,9 @@
 #include "include/SystemTimer.h"
 #include "include/Task.h"
 #include "include/Uart.h"
-#include "include/Vector.h"
 #include "include/buddy_alloc.h"
 
-#define PACKED __attribute((__packed__))
-
 #define BUDDY_ALLOC_IMPLEMENTATION
-
-using SD::Lists::SinglyLinkedList;
 #include "include/String.h"
 
 extern void* _boot_alloc_start;
@@ -106,18 +101,18 @@ extern "C" void kernel_main() {
   for (int i = 0; i < 4; ++i) Core::runningQLock[i] = new Spinlock();
   Core::sleepingQLock = new Spinlock();
 
-  Core::runningQ[get_core()] = new SinglyLinkedList<Task*>();
-  Core::sleepingQ = new SinglyLinkedList<Task*>();
+  Core::runningQ[get_core()] = new ArrayList<Task*>();
+  Core::sleepingQ = new ArrayList<Task*>();
   Task* idle = Task::createKernelTask((uint64_t)&idleTask);
-  Core::runningQ[get_core()]->insert(idle);
+  Core::runningQ[get_core()]->add(idle);
 
   for (int i = 0; i < THREAD_N; ++i) {
     Task* t = Task::createKernelTask((uint64_t)&kernelTask);
-    Core::runningQ[get_core()]->insert(t);
+    Core::runningQ[get_core()]->add(t);
   }
 
   Task* screen = Task::createKernelTask((uint64_t)&screenTask);
-  Core::runningQ[get_core()]->insert(screen);
+  Core::runningQ[get_core()]->add(screen);
   Core::current[get_core()] = new Task();
 
   /* Task* topBar = Task::createKernelTask((uint64_t)&topBarTask);

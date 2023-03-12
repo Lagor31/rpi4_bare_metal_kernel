@@ -4,8 +4,11 @@
 #include <stdint.h>
 
 #include <cstddef>
-#include "../include/Lists/ArrayList.hpp"
+
 #include "../include/Task.h"
+
+#define PACKED __attribute((__packed__))
+
 extern "C" void _hang_forever();
 
 class Std {

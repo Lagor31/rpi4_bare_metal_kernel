@@ -40,9 +40,9 @@ void *KernelHeapAllocator::alloc(unsigned size) {
     for (int i = 0; i < 4; ++i) {
       Console::print_no_lock("#################\nCore%d\n", i);
       Console::print_no_lock("RunninQ Core%d: %d\n", i,
-                             Core::runningQ[i]->count());
+                             Core::runningQ[i]->getSize());
     }
-    Console::print_no_lock("SleepingQ: %d\n\n", Core::sleepingQ->count());
+    Console::print_no_lock("SleepingQ: %d\n\n", Core::sleepingQ->getSize());
     Console::print_no_lock("\n\n");
     rpi_sys_timer_t *timer = SystemTimer::getTimer();
     Console::print_no_lock("System Timer Counter: %x\n",

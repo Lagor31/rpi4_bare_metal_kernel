@@ -3,20 +3,14 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "Lists/SinglyLinkedList.hpp"
 #include "Mem.h"
 #include "Spinlock.h"
-
-
-using SD::Lists::SinglyLinkedList;
 
 extern "C" void enable_irq();
 extern "C" void disable_irq();
 // void disable_interrupt_controller();
 void handle_irq();
 void initSchedLock();
-// splck_t sched_lock;
-extern SinglyLinkedList<uint32_t>* removeMe;
 
 struct core_context {
   uint64_t x19;

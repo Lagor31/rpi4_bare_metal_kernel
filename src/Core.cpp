@@ -2,11 +2,9 @@
 
 #include "include/Console.h"
 #include "include/GIC.h"
-#include "include/Lists/ArrayList.hpp"
+#include "include/List.h"
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
-
-using SD::Lists::ArrayList;
 
 extern "C" void enable_irq(void);
 extern "C" void disable_irq(void);
@@ -22,12 +20,12 @@ Spinlock* Core::runningQLock[4];
 Spinlock* Core::sleepingQLock;
 
 Task* Core::current[4];
-SinglyLinkedList<Task*>* Core::runningQ[4];
-SinglyLinkedList<Task*>* Core::sleepingQ;
+ArrayList<Task*>* Core::runningQ[4];
+ArrayList<Task*>* Core::sleepingQ;
 
-void Core::printList(SinglyLinkedList<Task*>* l) {
-  for (uint32_t i = 0; i < l->count(); ++i) {
-    Console::print("PID: %d\n", l->get(i)->pid);
+void Core::printList(ArrayList<Task*>* l) {
+  for (auto i : *l) {
+    Console::print("PID: %d\n", i->pid);
   }
 }
 void Core::preemptDisable() { Core::current[get_core()]->c++; }
@@ -38,21 +36,21 @@ void Core::start(uint32_t core, void (*func)(void)) {
   if (core < 1 || core > 3) return;
 
   switch (core) {
-  case 1:
-    store64((unsigned long)0xffff0000000000E0, (unsigned long)func);
-    asm volatile("dc civac, %0" : : "r"(0xffff0000000000E0) : "memory");
-    asm volatile("sev");
-    break;
-  case 2:
-    store64((unsigned long)0xffff0000000000E8, (unsigned long)func);
-    asm volatile("dc civac, %0" : : "r"(0xffff0000000000E8) : "memory");
-    asm volatile("sev");
-    break;
-  case 3:
-    store64((unsigned long)0xffff0000000000F0, (unsigned long)func);
-    asm volatile("dc civac, %0" : : "r"(0xffff0000000000F0) : "memory");
-    asm volatile("sev");
-    break;
+    case 1:
+      store64((unsigned long)0xffff0000000000E0, (unsigned long)func);
+      asm volatile("dc civac, %0" : : "r"(0xffff0000000000E0) : "memory");
+      asm volatile("sev");
+      break;
+    case 2:
+      store64((unsigned long)0xffff0000000000E8, (unsigned long)func);
+      asm volatile("dc civac, %0" : : "r"(0xffff0000000000E8) : "memory");
+      asm volatile("sev");
+      break;
+    case 3:
+      store64((unsigned long)0xffff0000000000F0, (unsigned long)func);
+      asm volatile("dc civac, %0" : : "r"(0xffff0000000000F0) : "memory");
+      asm volatile("sev");
+      break;
   }
 }
 

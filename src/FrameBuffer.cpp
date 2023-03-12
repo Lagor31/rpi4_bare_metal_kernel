@@ -3,14 +3,13 @@
 #include "include/Console.h"
 #include "include/Core.h"
 #include "include/IO.h"
+#include "include/List.h"
 #include "include/Mailbox.h"
 #include "include/Mem.h"
 #include "include/Spinlock.h"
 #include "include/Terminal.h"
 
-using SD::Lists::SinglyLinkedList;
-
-SinglyLinkedList<Circle*>* circles;
+ArrayList<Circle*>* circles;
 
 unsigned int width, height, pitch, isrgb;
 unsigned char* fb;
@@ -88,7 +87,7 @@ void FBInit() {
     fb = 0xffff000000000000 + (unsigned char*)((long)mbox[28]);
     kernelFb = (uint8_t*)GlobalKernelAlloc::alloc(4 * width * height);
 
-    circles = new SinglyLinkedList<Circle*>();
+    circles = new ArrayList<Circle*>();
 
     // for (int c = 0; c < 4 * width * height; ++c) fb[c] = 0xeE;
     Console::print("Frame buffer allocated!\nW: %d H: %d Pitch: %d RGB %d\n",
@@ -154,7 +153,7 @@ void paintCircle(Circle* c) {
 
   fb_lock->getLock();
   Core::disableIRQ();
-  circles->insert(c);
+  circles->add(c);
   Core::enableIRQ();
 
   fb_lock->release();

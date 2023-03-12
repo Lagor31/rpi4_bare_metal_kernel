@@ -7,15 +7,12 @@
 #include "include/Core.h"
 #include "include/GIC.h"
 #include "include/KernelHeapAllocator.h"
-#include "include/Lists/ArrayList.hpp"
+#include "include/List.h"
 #include "include/Mem.h"
 #include "include/Spinlock.h"
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
-#include "include/Vector.h"
 #include "include/sysregs.h"
-
-using SD::Lists::ArrayList;
 
 uint32_t x = 0;
 uint32_t y = 0;
@@ -52,8 +49,8 @@ uint32_t calcNextCore() {
   for (int i = 0; i < 4; ++i) {
     Core::runningQLock[i]->getLock();
 
-    if (Core::runningQ[i]->count() <= count) {
-      count = Core::runningQ[i]->count();
+    if (Core::runningQ[i]->getSize() < count) {
+      count = Core::runningQ[i]->getSize();
       outCore = i;
     }
     Core::runningQLock[i]->release();
@@ -68,24 +65,22 @@ void wakeUpTimers() {
     without any protection from the interrupted Task
   */
   Core::sleepingQLock->getLock();
+  Core::sleepingQ->quickSort();
 
-  for (uint32_t i = 0; i < Core::sleepingQ->count(); ++i) {
-    uint64_t cTimer = Core::sleepingQ->get(i)->timer;
-    if (cTimer != 0 && cTimer <= SystemTimer::getTimer()->counter_lo) {
-      Task* t = Core::sleepingQ->get(i);
+  // Try to make it safe
+_begin_wake_up:
+  for (auto t : *Core::sleepingQ) {
+    if (t->timer != 0 && t->timer <= SystemTimer::getCounter()) {
       t->timer = 0;
-      // uint32_t nextCore = get_core();
-      // while ((++nextCore % 4) == get_core());
       nextCore = calcNextCore();
-      // Console::print_no_lock("PID %d to Core%d\n", t->pid, nextCore);
       Core::runningQLock[nextCore]->getLock();
-      Core::runningQ[nextCore]->insert(t);
-      Core::sleepingQ->remove(i);
+      if (!Core::sleepingQ->removeElement(t))
+        Core::panic("Not found in sleeping Q.\n");
+      Core::runningQ[nextCore]->add(t);
       Core::runningQLock[nextCore]->release();
-      goto _end_sleep;
+      goto _begin_wake_up;
     }
   }
-_end_sleep:
   Core::sleepingQLock->release();
 }
 
@@ -97,8 +92,8 @@ void reschedule(CoreContext* regs) {
     Core::runningQLock[get_core()]->getLock();
 
     c = Std::hash(SystemTimer::getTimer()->counter_lo) %
-        Core::runningQ[get_core()]->count();
-    next = Core::runningQ[get_core()]->get(c);
+        Core::runningQ[get_core()]->getSize();
+    next = *Core::runningQ[get_core()]->get(c);
     Core::runningQLock[get_core()]->release();
 
     copyRegs(regs, &Core::current[get_core()]->context);
@@ -118,12 +113,12 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
   unsigned int irq = irq_ack_reg & 0x3FF;
 
   rpi_sys_timer_t* timer;
-
-  /* Wake up expired timers */
-  wakeUpTimers();
-
+  // Console::print_no_lock("@@@@ Begin Int %d @@@@\n", irq);
   switch (irq) {
     case (SYSTEM_TIMER_IRQ_1):
+
+      /* Wake up expired timers */
+      wakeUpTimers();
 
       /* We reschedule */
       reschedule(regs);
@@ -153,18 +148,13 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
 
       Core::runningQLock[get_core()]->getLock();
       // Putting current to sleep
-      for (uint32_t i = 0; i < Core::runningQ[get_core()]->count(); ++i) {
-        if (Core::current[get_core()]->pid ==
-            Core::runningQ[get_core()]->get(i)->pid) {
-          Core::runningQ[get_core()]->remove(i);
-          break;
-        }
-      }
+      Core::runningQ[get_core()]->quickSort();
+      Core::runningQ[get_core()]->removeElement(Core::current[get_core()]);
 
       Core::runningQLock[get_core()]->release();
 
       Core::sleepingQLock->getLock();
-      Core::sleepingQ->insert(Core::current[get_core()]);
+      Core::sleepingQ->add(Core::current[get_core()]);
       Core::sleepingQLock->release();
       reschedule(regs);
       break;
@@ -192,9 +182,9 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
       for (int i = 0; i < 4; ++i) {
         Console::print_no_lock("#################\nCore%d\n", i);
         Console::print_no_lock("RunninQ Core%d: %d\n", i,
-                               Core::runningQ[i]->count());
+                               Core::runningQ[i]->getSize());
       }
-      Console::print_no_lock("SleepingQ: %d\n\n", Core::sleepingQ->count());
+      Console::print_no_lock("SleepingQ: %d\n\n", Core::sleepingQ->getSize());
       Console::print_no_lock("\n\n");
       timer = SystemTimer::getTimer();
       Console::print_no_lock("System Timer Counter: %x\n",
@@ -221,7 +211,7 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
                              get_core());
       break;
   }
-
+  // Console::print_no_lock("@@@@ END Int %d @@@@\n", irq);
   MMIO::write(GICC_EOIR, irq);
 }
 
