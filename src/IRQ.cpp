@@ -187,6 +187,7 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
       Console::print_no_lock("\n\n");
       for (int i = 0; i < NUM_CORES; ++i) {
         Console::print_no_lock("#################\nCore%d\n", i);
+        Console::print_no_lock("Current PID: %d\n", Core::currentTask[i]->pid);
         for (int p = 0; p < PRIORITIES; ++p) {
           if (Core::runningQ[i][p]->getSize() > 0)
             Console::print_no_lock("RunninQ[%d] Core%d: %d\n", p, i,

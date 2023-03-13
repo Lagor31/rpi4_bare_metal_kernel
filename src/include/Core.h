@@ -7,7 +7,7 @@
 #include "List.h"
 #include "Task.h"
 
-#define THREAD_N 200
+#define THREAD_N 500
 #define NUM_CORES 4
 #define current (Core::currentTask[get_core()])
 #define PRIORITIES 21
