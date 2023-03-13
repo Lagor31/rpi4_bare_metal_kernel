@@ -9,11 +9,6 @@
 #ifndef ARRAYLIST_H_
 #define ARRAYLIST_H_
 
-/* #include <cstdlib>
-#include <iostream>
-#include <sstream>
-#include <string> */
-
 template <class T>
 class ArrayList {
  public:
@@ -51,8 +46,8 @@ class ArrayList {
   void mergeSort();
   // void shuffle();
   //~Information Getting methods
-  int getSize() const;
-  int getCapacity() const;
+  unsigned int getSize() const;
+  unsigned int getCapacity() const;
   // std::string toString() const;
 
  private:
@@ -455,7 +450,7 @@ bool ArrayList<T>::move(int index1, int index2) {
  * valid.
  */
 template <class T>
- T* ArrayList<T>::get(int index) const {
+T* ArrayList<T>::get(int index) const {
   return (index >= 0 && index < size) ? (array + index) : NULL;
 }
 
@@ -466,7 +461,7 @@ template <class T>
  * @return size the number of elements in this ArrayList.
  */
 template <class T>
-int ArrayList<T>::getSize() const {
+unsigned int ArrayList<T>::getSize() const {
   return size;
 }
 
@@ -476,7 +471,7 @@ int ArrayList<T>::getSize() const {
  * @return the capacity of the ArrayList.
  */
 template <class T>
-int ArrayList<T>::getCapacity() const {
+unsigned int ArrayList<T>::getCapacity() const {
   return capacity;
 }
 

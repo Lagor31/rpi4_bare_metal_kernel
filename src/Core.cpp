@@ -16,11 +16,12 @@ extern "C" uint64_t get_elr_el1();
 void Core::disableIRQ() { disable_irq(); }
 void Core::enableIRQ() { enable_irq(); }
 
-Spinlock* Core::runningQLock[4];
+Spinlock* Core::runningQLock[NUM_CORES];
 Spinlock* Core::sleepingQLock;
 
-Task* Core::current[4];
-ArrayList<Task*>* Core::runningQ[4];
+Task* Core::currentTask[NUM_CORES];
+
+ArrayList<Task*>* Core::runningQ[NUM_CORES];
 ArrayList<Task*>* Core::sleepingQ;
 
 void Core::printList(ArrayList<Task*>* l) {
@@ -28,9 +29,9 @@ void Core::printList(ArrayList<Task*>* l) {
     Console::print("PID: %d\n", i->pid);
   }
 }
-void Core::preemptDisable() { Core::current[get_core()]->c++; }
-void Core::preemptEnable() { Core::current[get_core()]->c--; }
-bool Core::isPreamptable() { return Core::current[get_core()]->c <= 0; }
+void Core::preemptDisable() { current->premption++; }
+void Core::preemptEnable() { current->premption--; }
+bool Core::isPreamptable() { return current->premption <= 0; }
 
 void Core::start(uint32_t core, void (*func)(void)) {
   if (core < 1 || core > 3) return;
@@ -56,7 +57,7 @@ void Core::start(uint32_t core, void (*func)(void)) {
 
 void Core::panic(const char* message) {
   uint32_t i = 0;
-  for (; i < 4; ++i) {
+  for (; i < NUM_CORES; ++i) {
     if (get_core() != i) GIC400::send_sgi(1, i);
   }
   i = 0;

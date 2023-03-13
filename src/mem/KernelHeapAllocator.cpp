@@ -5,7 +5,7 @@
 #include "../include/Console.h"
 #include "../include/Core.h"
 #include "../include/SystemTimer.h"
-#include "../include/buddy_alloc.h"
+#include "../include/BuddyAlloc.h"
 
 uint64_t allocations = 0;
 KernelHeapAllocator::KernelHeapAllocator(unsigned char *s, unsigned char *e) {
@@ -37,7 +37,7 @@ void *KernelHeapAllocator::alloc(unsigned size) {
   if (out == NULL) {
     Console::print_no_lock("ERROR - Allocations: %d", allocations);
     Console::print_no_lock("\n\n");
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < NUM_CORES; ++i) {
       Console::print_no_lock("#################\nCore%d\n", i);
       Console::print_no_lock("RunninQ Core%d: %d\n", i,
                              Core::runningQ[i]->getSize());

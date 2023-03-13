@@ -1,4 +1,4 @@
-#include "../include/sysregs.h"
+#include "../include/Sysregs.h"
 #include "../include/MMU.h"
 
 
@@ -7,7 +7,7 @@
 .space 5 * 1024 * 1024, 0
 
 .section ".heap"
-.space 20 * 1024 * 1024, 0
+.space 50 * 1024 * 1024, 0
 
 .section ".boot", #alloc, #execinstr // Make sure the linker puts this at the start of the kernel image
 

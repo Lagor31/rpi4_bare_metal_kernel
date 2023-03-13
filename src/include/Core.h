@@ -7,7 +7,9 @@
 #include "List.h"
 #include "Task.h"
 
-#define THREAD_N 50
+#define THREAD_N 10
+#define NUM_CORES 4
+#define current (Core::currentTask[get_core()])
 
 class Core {
  public:
@@ -16,16 +18,13 @@ class Core {
   static void disableIRQ();
   static void enableIRQ();
   static void panic(const char* s);
-  static Task* current[4];
+  static Task* currentTask[NUM_CORES];
   static void printList(ArrayList<Task *>* l);
 
-  static Spinlock* runningQLock[4];
+  static Spinlock* runningQLock[NUM_CORES];
   static Spinlock* sleepingQLock;
 
-  // static Vector<Task*> *runningQ[4];
-
-  // static Task *runningQ[4][THREAD_N];
-  static ArrayList<Task*>* runningQ[4];
+  static ArrayList<Task*>* runningQ[NUM_CORES];
   static ArrayList<Task*>* sleepingQ;
   static void preemptDisable();
   static void preemptEnable();

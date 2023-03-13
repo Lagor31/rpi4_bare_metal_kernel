@@ -11,9 +11,9 @@
 #include "include/Mem.h"
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
-#include "include/buddy_alloc.h"
+#include "include/BuddyAlloc.h"
 
-extern "C" uint64_t core_activations[4];
+extern "C" uint64_t core_activations[NUM_CORES];
 extern "C" uint64_t get_sp();
 extern "C" unsigned int get_core();
 
@@ -21,9 +21,8 @@ void idleTask() { _hang_forever(); }
 
 void topBarTask() {
   while (true) {
-    uint32_t core = get_core();
-    Core::current[core]->sleep(1000);
-  }
+    current->sleep(1000);
+    }
   _hang_forever();
 }
 
@@ -50,14 +49,13 @@ void screenTask() {
     }
 
     fb_lock->release();
-    Core::current[get_core()]->sleep(16);
+    current->sleep(16);
   }
 }
 void kernelTask() {
   while (true) {
     uint32_t core = get_core();
-    Core::current[core]->sleep(2000 +
-                               Std::hash(SystemTimer::getCounter()) % 1000);
+    current->sleep(2000 + Std::hash(SystemTimer::getCounter()) % 1000);
 
     uint32_t x = Std::hash(SystemTimer::getCounter()) % (1920);
     uint32_t y = Std::hash(SystemTimer::getCounter()) % (1080) + 32;
@@ -78,17 +76,14 @@ void kernelTask() {
 }
 
 void Task::sleep(uint64_t ms) {
-  rpi_sys_timer_t* timer;
-
-  Task* curr = Core::current[get_core()];
+  Task* curr = current;
   curr->timer = SystemTimer::getCounter() + ms * (uint64_t)1000;
-
   GIC400::send_sgi(SYSTEM_SLEEP_IRQ, get_core());
 }
 
 uint64_t Task::freePID = 1;
 
-Task::Task() { c = 0; }
+Task::Task() { premption = 0; }
 
 Task* Task::createKernelTask(uint64_t entryPoint) {
   Task* out = new Task();
@@ -104,7 +99,7 @@ Task* Task::createKernelTask(uint64_t entryPoint) {
 
   out->context.gpr[10] = Task::freePID;
 
-  out->c = 0;
+  out->premption = 0;
   out->timer = 0;
   return out;
 }

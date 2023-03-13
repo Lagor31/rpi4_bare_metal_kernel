@@ -1,5 +1,5 @@
 #include "../include/Core.h"
-#include "../include/buddy_alloc.h"
+#include "../include/BuddyAlloc.h"
 
 size_t buddy_sizeof(size_t memory_size) {
   if (memory_size < BUDDY_ALLOC_ALIGN) {

@@ -32,7 +32,7 @@ extern "C" void initSecondaryCore() {
   Task* screen = Task::createKernelTask((uint64_t)&screenTask);
   Core::runningQ[core]->add(screen);
   // }
-  Core::current[core] = new Task();
+  current = new Task();
   Console::print("@@@@@@@@@@@@@@@\n\n Core %d active!\n\n@@@@@@@@@@@@@@@\n",
                  core);
 

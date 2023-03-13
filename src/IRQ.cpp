@@ -12,7 +12,7 @@
 #include "include/Spinlock.h"
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
-#include "include/sysregs.h"
+#include "include/Sysregs.h"
 
 uint32_t x = 0;
 uint32_t y = 0;
@@ -96,9 +96,9 @@ void reschedule(CoreContext* regs) {
     next = *Core::runningQ[get_core()]->get(c);
     Core::runningQLock[get_core()]->release();
 
-    copyRegs(regs, &Core::current[get_core()]->context);
+    copyRegs(regs, &current->context);
     copyRegs(&next->context, regs);
-    Core::current[get_core()] = next;
+    current = next;
     if (next->context.elr_el1 < 0xFFFF000000000000) {
       Console::print_no_lock("Returning to wrong address 0x%x\n",
                              next->context.elr_el1);
@@ -149,12 +149,12 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
       Core::runningQLock[get_core()]->getLock();
       // Putting current to sleep
       Core::runningQ[get_core()]->quickSort();
-      Core::runningQ[get_core()]->removeElement(Core::current[get_core()]);
+      Core::runningQ[get_core()]->removeElement(current);
 
       Core::runningQLock[get_core()]->release();
 
       Core::sleepingQLock->getLock();
-      Core::sleepingQ->add(Core::current[get_core()]);
+      Core::sleepingQ->add(current);
       Core::sleepingQLock->release();
       reschedule(regs);
       break;
@@ -230,7 +230,9 @@ void printRegs(CoreContext* regs) {
       "SPSR=%x\nELR=%x\nESR=%x\nLR=%x\nSP_EL0=%x\nFAR_EL1=%x\n", regs->sprs_el1,
       regs->elr_el1, regs->esr_el1, regs->lr, regs->sp_el0, regs->far_el1);
 
-  Console::print_no_lock("Current PID: %d\n", Core::current[get_core()]->pid);
+  Console::print_no_lock("Current PID: %d\n",
+                         current->pid);
+  Console::print_no_lock("Allocation: %d\n", allocations);
 }
 
 extern "C" void sync_handler_sp0(CoreContext* regs) {

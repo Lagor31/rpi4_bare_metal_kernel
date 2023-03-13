@@ -1,11 +1,11 @@
-#include "../include/sysregs.h"
+#include "../include/Sysregs.h"
 #include "../include/MMU.h"
 
 .section ".text"
 
-.global spin_lock
-.type spin_lock, @function
-spin_lock:
+.global _spin_lock
+.type _spin_lock, @function
+_spin_lock:
     mov	w2, #1
 	sevl
 l1:	wfe
@@ -15,9 +15,9 @@ l2:	ldaxr	w1, [x0]
     cbnz	w1, l2
 	ret
 
-.global spin_unlock
-.type spin_unlock, @function
-spin_unlock:
+.global _spin_unlock
+.type _spin_unlock, @function
+_spin_unlock:
     stlr	wzr, [x0]
 	ret
 

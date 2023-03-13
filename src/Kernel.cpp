@@ -9,6 +9,7 @@
 #include "include/List.h"
 #include "include/MMU.h"
 #include "include/Mem.h"
+#include "include/RNG.h"
 #include "include/RedFS.h"
 #include "include/SMP.h"
 #include "include/Spinlock.h"
@@ -17,10 +18,8 @@
 #include "include/SystemTimer.h"
 #include "include/Task.h"
 #include "include/Uart.h"
-#include "include/buddy_alloc.h"
-
+#include "include/BuddyAlloc.h"
 #define BUDDY_ALLOC_IMPLEMENTATION
-#include "include/String.h"
 
 extern void* _boot_alloc_start;
 extern void* _boot_alloc_end;
@@ -68,11 +67,12 @@ extern "C" void kernel_main() {
   UART* uart = new UART(gpio);
   GIC400* gic = new GIC400();
   SystemTimer* timer = new SystemTimer();
+  RNG* rng200 = new RNG();
   DriverManager::load(gpio);
   DriverManager::load(uart);
   DriverManager::load(gic);
   DriverManager::load(timer);
-
+  DriverManager::load(rng200);
   DriverManager::startAll();
 
   Console::setKernelConsole(uart);
@@ -98,7 +98,7 @@ extern "C" void kernel_main() {
   Console::print("Timer init on core: %d\n", get_core());
   Console::print("############################################\n");
 
-  for (int i = 0; i < 4; ++i) Core::runningQLock[i] = new Spinlock();
+  for (int i = 0; i < NUM_CORES; ++i) Core::runningQLock[i] = new Spinlock();
   Core::sleepingQLock = new Spinlock();
 
   Core::runningQ[get_core()] = new ArrayList<Task*>();
@@ -113,8 +113,10 @@ extern "C" void kernel_main() {
 
   Task* screen = Task::createKernelTask((uint64_t)&screenTask);
   Core::runningQ[get_core()]->add(screen);
-  Core::current[get_core()] = new Task();
+  current = new Task();
 
+/*   for (int i = 0; i < 10; ++i)
+    Console::print("RNG%d=%d", i, rng200->getNumber()); */
   /* Task* topBar = Task::createKernelTask((uint64_t)&topBarTask);
   Core::runningQ[get_core()]->insert(topBar); */
 

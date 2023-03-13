@@ -12,7 +12,7 @@ class Task {
   uint64_t pid;
   long priority;
   long ticks;
-  uint64_t c;
+  uint64_t premption;
   uint64_t flags;
   static Task *createKernelTask(uint64_t entryPoint);
   static uint64_t freePID;

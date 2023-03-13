@@ -6,7 +6,7 @@
  * A binary buddy memory allocator
  *
  * To include and use it in your project do the following
- * 1. Add buddy_alloc.h (this file) to your include directory
+ * 1. Add BuddyAlloc.h (this file) to your include directory
  * 2. Include the header in places where you need to use the allocator
  * 3. In one of your source files #define BUDDY_ALLOC_IMPLEMENTATION
  *    and then import the header. This will insert the implementation.
