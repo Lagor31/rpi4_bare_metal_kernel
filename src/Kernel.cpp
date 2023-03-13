@@ -1,4 +1,5 @@
 #include "include/BootAllocator.h"
+#include "include/BuddyAlloc.h"
 #include "include/Console.h"
 #include "include/Core.h"
 #include "include/FrameBuffer.h"
@@ -18,7 +19,6 @@
 #include "include/SystemTimer.h"
 #include "include/Task.h"
 #include "include/Uart.h"
-#include "include/BuddyAlloc.h"
 #define BUDDY_ALLOC_IMPLEMENTATION
 
 extern void* _boot_alloc_start;
@@ -100,23 +100,27 @@ extern "C" void kernel_main() {
 
   for (int i = 0; i < NUM_CORES; ++i) Core::runningQLock[i] = new Spinlock();
   Core::sleepingQLock = new Spinlock();
+  for (int p = 0; p < PRIORITIES; ++p)
+    Core::runningQ[get_core()][p] = new ArrayList<Task*>();
 
-  Core::runningQ[get_core()] = new ArrayList<Task*>();
   Core::sleepingQ = new ArrayList<Task*>();
   Task* idle = Task::createKernelTask((uint64_t)&idleTask);
-  Core::runningQ[get_core()]->add(idle);
+  Core::runningQ[get_core()][idle->p]->add(idle);
 
   for (int i = 0; i < THREAD_N; ++i) {
     Task* t = Task::createKernelTask((uint64_t)&kernelTask);
-    Core::runningQ[get_core()]->add(t);
+    t->p = 19;
+    Core::runningQ[get_core()][t->p]->add(t);
   }
 
   Task* screen = Task::createKernelTask((uint64_t)&screenTask);
-  Core::runningQ[get_core()]->add(screen);
+  screen->p = 0;
+  screen->pinToCore(get_core());
+  Core::runningQ[get_core()][screen->p]->add(screen);
   current = new Task();
 
-/*   for (int i = 0; i < 10; ++i)
-    Console::print("RNG%d=%d", i, rng200->getNumber()); */
+  /*   for (int i = 0; i < 10; ++i)
+      Console::print("RNG%d=%d", i, rng200->getNumber()); */
   /* Task* topBar = Task::createKernelTask((uint64_t)&topBarTask);
   Core::runningQ[get_core()]->insert(topBar); */
 

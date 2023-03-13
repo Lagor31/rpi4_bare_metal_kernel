@@ -11,8 +11,8 @@
 #include "include/Mem.h"
 #include "include/Spinlock.h"
 #include "include/Stdlib.h"
-#include "include/SystemTimer.h"
 #include "include/Sysregs.h"
+#include "include/SystemTimer.h"
 
 uint32_t x = 0;
 uint32_t y = 0;
@@ -39,18 +39,19 @@ void copyRegs(CoreContext* s, CoreContext* d) {
   d->sp_el0 = s->sp_el0;
 }
 
-uint32_t calcNextCore() {
+uint32_t calcNextCore(Task* t) {
   // return (++cc % 4);
   // return Std::hash(SystemTimer::getTimer()->counter_lo) % 4;
 
+  if (t->isPinnedToCore()) return t->getPinnedCore();
   int outCore = 0;
   uint32_t count = 0xfffffff;
 
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < NUM_CORES; ++i) {
     Core::runningQLock[i]->getLock();
 
-    if (Core::runningQ[i]->getSize() < count) {
-      count = Core::runningQ[i]->getSize();
+    if (Core::runningQ[i][t->p]->getSize() < count) {
+      count = Core::runningQ[i][t->p]->getSize();
       outCore = i;
     }
     Core::runningQLock[i]->release();
@@ -72,11 +73,11 @@ _begin_wake_up:
   for (auto t : *Core::sleepingQ) {
     if (t->timer != 0 && t->timer <= SystemTimer::getCounter()) {
       t->timer = 0;
-      nextCore = calcNextCore();
+      nextCore = calcNextCore(t);
       Core::runningQLock[nextCore]->getLock();
       if (!Core::sleepingQ->removeElement(t))
         Core::panic("Not found in sleeping Q.\n");
-      Core::runningQ[nextCore]->add(t);
+      Core::runningQ[nextCore][t->p]->add(t);
       Core::runningQLock[nextCore]->release();
       goto _begin_wake_up;
     }
@@ -90,10 +91,15 @@ void reschedule(CoreContext* regs) {
 
   if (Core::isPreamptable()) {
     Core::runningQLock[get_core()]->getLock();
+    for (int i = 0; i < PRIORITIES; ++i) {
+      if (Core::runningQ[get_core()][i]->getSize() > 0) {
+        c = Std::hash(SystemTimer::getTimer()->counter_lo) %
+            Core::runningQ[get_core()][i]->getSize();
+        next = *Core::runningQ[get_core()][i]->get(c);
+        break;
+      }
+    }
 
-    c = Std::hash(SystemTimer::getTimer()->counter_lo) %
-        Core::runningQ[get_core()]->getSize();
-    next = *Core::runningQ[get_core()]->get(c);
     Core::runningQLock[get_core()]->release();
 
     copyRegs(regs, &current->context);
@@ -148,8 +154,8 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
 
       Core::runningQLock[get_core()]->getLock();
       // Putting current to sleep
-      Core::runningQ[get_core()]->quickSort();
-      Core::runningQ[get_core()]->removeElement(current);
+      Core::runningQ[get_core()][current->p]->quickSort();
+      Core::runningQ[get_core()][current->p]->removeElement(current);
 
       Core::runningQLock[get_core()]->release();
 
@@ -179,10 +185,13 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
          }
        } */
       Console::print_no_lock("\n\n");
-      for (int i = 0; i < 4; ++i) {
+      for (int i = 0; i < NUM_CORES; ++i) {
         Console::print_no_lock("#################\nCore%d\n", i);
-        Console::print_no_lock("RunninQ Core%d: %d\n", i,
-                               Core::runningQ[i]->getSize());
+        for (int p = 0; p < PRIORITIES; ++p) {
+          if (Core::runningQ[i][p]->getSize() > 0)
+            Console::print_no_lock("RunninQ[%d] Core%d: %d\n", p, i,
+                                   Core::runningQ[i][p]->getSize());
+        }
       }
       Console::print_no_lock("SleepingQ: %d\n\n", Core::sleepingQ->getSize());
       Console::print_no_lock("\n\n");
@@ -211,7 +220,8 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
                              get_core());
       break;
   }
-  // Console::print_no_lock("@@@@ END Int %d @@@@\n", irq);
+// Console::print_no_lock("@@@@ END Int %d @@@@\n", irq);
+_done:
   MMIO::write(GICC_EOIR, irq);
 }
 
@@ -230,8 +240,7 @@ void printRegs(CoreContext* regs) {
       "SPSR=%x\nELR=%x\nESR=%x\nLR=%x\nSP_EL0=%x\nFAR_EL1=%x\n", regs->sprs_el1,
       regs->elr_el1, regs->esr_el1, regs->lr, regs->sp_el0, regs->far_el1);
 
-  Console::print_no_lock("Current PID: %d\n",
-                         current->pid);
+  Console::print_no_lock("Current PID: %d\n", current->pid);
   Console::print_no_lock("Allocation: %d\n", allocations);
 }
 

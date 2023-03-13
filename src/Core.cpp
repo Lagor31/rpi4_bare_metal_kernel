@@ -21,7 +21,7 @@ Spinlock* Core::sleepingQLock;
 
 Task* Core::currentTask[NUM_CORES];
 
-ArrayList<Task*>* Core::runningQ[NUM_CORES];
+ArrayList<Task*>* Core::runningQ[NUM_CORES][PRIORITIES];
 ArrayList<Task*>* Core::sleepingQ;
 
 void Core::printList(ArrayList<Task*>* l) {

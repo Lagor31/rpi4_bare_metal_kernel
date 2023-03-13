@@ -2,10 +2,10 @@
 
 #include <stdint.h>
 
+#include "../include/BuddyAlloc.h"
 #include "../include/Console.h"
 #include "../include/Core.h"
 #include "../include/SystemTimer.h"
-#include "../include/BuddyAlloc.h"
 
 uint64_t allocations = 0;
 KernelHeapAllocator::KernelHeapAllocator(unsigned char *s, unsigned char *e) {
@@ -39,8 +39,11 @@ void *KernelHeapAllocator::alloc(unsigned size) {
     Console::print_no_lock("\n\n");
     for (int i = 0; i < NUM_CORES; ++i) {
       Console::print_no_lock("#################\nCore%d\n", i);
-      Console::print_no_lock("RunninQ Core%d: %d\n", i,
-                             Core::runningQ[i]->getSize());
+      for (int p = 0; p < PRIORITIES; ++p) {
+        if (Core::runningQ[i][p]->getSize() > 0)
+          Console::print_no_lock("RunninQ[%d] Core%d: %d\n", p, i,
+                                 Core::runningQ[i][p]->getSize());
+      }
     }
     Console::print_no_lock("SleepingQ: %d\n\n", Core::sleepingQ->getSize());
     Console::print_no_lock("\n\n");

@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "include/BuddyAlloc.h"
 #include "include/Console.h"
 #include "include/Core.h"
 #include "include/FrameBuffer.h"
@@ -11,7 +12,6 @@
 #include "include/Mem.h"
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
-#include "include/BuddyAlloc.h"
 
 extern "C" uint64_t core_activations[NUM_CORES];
 extern "C" uint64_t get_sp();
@@ -22,15 +22,17 @@ void idleTask() { _hang_forever(); }
 void topBarTask() {
   while (true) {
     current->sleep(1000);
-    }
+  }
   _hang_forever();
 }
 
 void screenTask() {
   Circle* drawMe;
   while (true) {
-    /* Console::print("Screen Task PID=%d Core=%d\n",
-                   Core::current[get_core()]->pid, get_core()); */
+    /*  Console::print("Screen Task PID=%d Core=%d\n",
+                    current->pid, get_core()); */
+  _begin:
+
     fb_lock->getLock();
     if (circles->getSize() > 0) {
       drawMe = *circles->get(0);
@@ -46,9 +48,15 @@ void screenTask() {
       delete drawMe;
       Core::enableIRQ();
       Core::preemptEnable();
+      fb_lock->release();
+
+    } else {
+      fb_lock->release();
+      goto _sleep;
     }
 
-    fb_lock->release();
+    goto _begin;
+  _sleep:
     current->sleep(16);
   }
 }
@@ -84,6 +92,18 @@ void Task::sleep(uint64_t ms) {
 uint64_t Task::freePID = 1;
 
 Task::Task() { premption = 0; }
+bool Task::isPinnedToCore() { return this->isCorePinned; }
+void Task::pinToCore(uint32_t core) {
+  if (core > (NUM_CORES - 1)) return;
+  this->isCorePinned = true;
+  this->corePinned = core;
+}
+uint32_t Task::getPinnedCore() {
+  if (!isCorePinned) Core::panic("Haven't checked if I'm core pinned!!!");
+  return this->corePinned;
+}
+
+void Task::disablePinning() { this->isCorePinned = false; }
 
 Task* Task::createKernelTask(uint64_t entryPoint) {
   Task* out = new Task();
@@ -96,9 +116,10 @@ Task* Task::createKernelTask(uint64_t entryPoint) {
   out->context.sprs_el1 = 0x364;
   out->pid = Task::freePID++;
   for (int i = 0; i < 30; ++i) out->context.gpr[i] = 0;
-
+  out->isCorePinned = false;
+  out->corePinned = 0;
   out->context.gpr[10] = Task::freePID;
-
+  out->p = 20;
   out->premption = 0;
   out->timer = 0;
   return out;

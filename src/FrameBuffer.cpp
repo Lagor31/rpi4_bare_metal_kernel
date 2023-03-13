@@ -149,7 +149,7 @@ void drawLine(int x1, int y1, int x2, int y2, unsigned char attr) {
 }
 
 void paintCircle(Circle* c) {
-  // Core::preemptDisable();
+  Core::preemptDisable();
 
   fb_lock->getLock();
   Core::disableIRQ();
@@ -157,7 +157,7 @@ void paintCircle(Circle* c) {
   Core::enableIRQ();
 
   fb_lock->release();
-  // Core::preemptEnable();
+  Core::preemptEnable();
 }
 
 void drawCircle(int x0, int y0, int radius, unsigned char attr, int fill) {
