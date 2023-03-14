@@ -30,7 +30,9 @@ sudo minicom -D /dev/ttyUSB0 --baudrate 11520
 ### Live Demo  
 #### The color of every circle gets determined by which core is running the relative rendering task
 #### Running on 4 cores with parallel rendering and 2000 Drawing Tasks scheduled dynamically on the most available core
-[video_2023-03-14_17-59-56.webm](https://user-images.githubusercontent.com/20226839/225082004-a62e8bbf-50ec-4bd3-9640-4f63e673bd0b.webm)
+[video_2023-03-14_17-59-56(1).webm](https://user-images.githubusercontent.com/20226839/225086390-e2dc4b1c-f98c-45ec-a0eb-4d80a97cf3b7.webm)
+
+
 ### TODO:
 - Unix Pipes
 - System calls
