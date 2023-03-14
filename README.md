@@ -23,6 +23,10 @@ I/O Through MiniUART to USB with **minicom**
 ```
 sudo minicom -D /dev/ttyUSB0 --baudrate 11520
 ```
+### Debuggint with minicom and GDB
+
+![osdev_debug](https://user-images.githubusercontent.com/20226839/225079906-9a0c62b9-1d42-46eb-b9c7-4711667ccf51.png)
+
 
 ### TODO:
 - Unix Pipes
