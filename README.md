@@ -27,7 +27,8 @@ sudo minicom -D /dev/ttyUSB0 --baudrate 11520
 
 ![osdev_debug](https://user-images.githubusercontent.com/20226839/225079906-9a0c62b9-1d42-46eb-b9c7-4711667ccf51.png)
 
-
+### Live Demo - The color of every circle gets determined by which core is running the relative rendering task
+[video_2023-03-14_17-59-56.webm](https://user-images.githubusercontent.com/20226839/225082004-a62e8bbf-50ec-4bd3-9640-4f63e673bd0b.webm)
 ### TODO:
 - Unix Pipes
 - System calls
@@ -44,3 +45,4 @@ sudo minicom -D /dev/ttyUSB0 --baudrate 11520
 - (...)
 
 [Work in progres...]
+
