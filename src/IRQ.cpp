@@ -40,15 +40,16 @@ void copyRegs(CoreContext* s, CoreContext* d) {
 }
 
 uint32_t calcNextCore(Task* t) {
-  // return (++cc % 4);
-  // return Std::hash(SystemTimer::getTimer()->counter_lo) % 4;
+  // return 0;
+  //  return (++cc % 4);
+  //  return Std::hash(SystemTimer::getTimer()->counter_lo) % 4;
 
   if (t->isPinnedToCore()) return t->getPinnedCore();
   int outCore = 0;
   uint32_t count = 0xfffffff;
 
   for (int i = 0; i < NUM_CORES; ++i) {
-    Core::runningQLock[i]->getLock();
+    Core::runningQLock[i]->spin();
 
     if (Core::runningQ[i][t->p]->getSize() < count) {
       count = Core::runningQ[i][t->p]->getSize();
@@ -59,38 +60,15 @@ uint32_t calcNextCore(Task* t) {
   return outCore;
 }
 
-void wakeUpTimers() {
-  /*
-    Waking up sleeping Tasks
-    This is dangerous because we're doing memory alloc stuff (remove, insert)
-    without any protection from the interrupted Task
-  */
-  Core::sleepingQLock->getLock();
-  Core::sleepingQ->quickSort();
-
-  // Try to make it safe
-_begin_wake_up:
-  for (auto t : *Core::sleepingQ) {
-    if (t->timer != 0 && t->timer <= SystemTimer::getCounter()) {
-      t->timer = 0;
-      nextCore = calcNextCore(t);
-      Core::runningQLock[nextCore]->getLock();
-      if (!Core::sleepingQ->removeElement(t))
-        Core::panic("Not found in sleeping Q.\n");
-      Core::runningQ[nextCore][t->p]->add(t);
-      Core::runningQLock[nextCore]->release();
-      goto _begin_wake_up;
-    }
-  }
-  Core::sleepingQLock->release();
-}
-
+/*
+  Finds a task to be executed within the running q
+*/
 void reschedule(CoreContext* regs) {
   Task* next;
   uint64_t c;
 
   if (Core::isPreamptable()) {
-    Core::runningQLock[get_core()]->getLock();
+    Core::runningQLock[get_core()]->spin();
     for (int i = 0; i < PRIORITIES; ++i) {
       if (Core::runningQ[get_core()][i]->getSize() > 0) {
         c = Std::hash(SystemTimer::getTimer()->counter_lo) %
@@ -111,6 +89,62 @@ void reschedule(CoreContext* regs) {
       _hang_forever();
     }
   }
+}
+
+void wakeUpTimers() {
+  /*
+    Waking up sleeping Tasks
+    This is dangerous because we're doing memory alloc stuff (remove, insert)
+    without any protection from the interrupted Task
+  */
+
+  Core::sleepingQLock->spin();
+  Core::sleepingQ->quickSort();
+
+  // Try to make it safe
+_begin_wake_up:
+  for (auto t : *Core::sleepingQ) {
+    if (t->timer != 0 && t->timer <= SystemTimer::getCounter()) {
+      t->timer = 0;
+      nextCore = calcNextCore(t);
+      Core::runningQLock[nextCore]->spin();
+      if (!Core::sleepingQ->removeElement(t))
+        Core::panic("Not found in sleeping Q.\n");
+      Core::runningQ[nextCore][t->p]->add(t);
+      Core::runningQLock[nextCore]->release();
+      goto _begin_wake_up;
+    }
+  }
+  Core::sleepingQLock->release();
+}
+
+void wakeUpLocks() {
+  /*
+    Waking up sleeping Tasks
+    This is dangerous because we're doing memory alloc stuff (remove, insert)
+    without any protection from the interrupted Task
+  */
+  // if (!Core::isPreamptable()) return;
+  Core::sleepingQLock->spin();
+  Core::sleepingQ->quickSort();
+
+  // Try to make it safe
+_begin_wake_up:
+  for (auto t : *Core::sleepingQ) {
+    if (t->sleepingOnLock != nullptr && t->sleepingOnLock->ownerPid == 0) {
+      // Console::print_no_lock("Waking up PID %d\n", t->pid);
+      t->sleepingOnLock = nullptr;
+      uint32_t nextCore = calcNextCore(t);
+
+      Core::runningQLock[nextCore]->spin();
+      if (!Core::sleepingQ->removeElement(t))
+        Core::panic("Not found in sleeping Q.\n");
+      Core::runningQ[nextCore][t->p]->add(t);
+      Core::runningQLock[nextCore]->release();
+      goto _begin_wake_up;
+    }
+  }
+  Core::sleepingQLock->release();
 }
 
 // Current EL with SPx
@@ -150,16 +184,21 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
       SystemTimer::getTimer()->control_status |= 0b1000;
       break;
 
+    case SYSTEM_WAKEUP_ALL:
+      wakeUpTimers();
+      wakeUpLocks();
+      break;
+
     case SYSTEM_SLEEP_IRQ:
 
-      Core::runningQLock[get_core()]->getLock();
+      Core::runningQLock[get_core()]->spin();
       // Putting current to sleep
       Core::runningQ[get_core()][current->p]->quickSort();
       Core::runningQ[get_core()][current->p]->removeElement(current);
 
       Core::runningQLock[get_core()]->release();
 
-      Core::sleepingQLock->getLock();
+      Core::sleepingQLock->spin();
       Core::sleepingQ->add(current);
       Core::sleepingQLock->release();
       reschedule(regs);
@@ -221,8 +260,7 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
                              get_core());
       break;
   }
-// Console::print_no_lock("@@@@ END Int %d @@@@\n", irq);
-_done:
+  // Console::print_no_lock("@@@@ END Int %d @@@@\n", irq);
   MMIO::write(GICC_EOIR, irq);
 }
 

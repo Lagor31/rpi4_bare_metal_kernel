@@ -124,15 +124,12 @@ extern "C" void kernel_main() {
   /* Task* topBar = Task::createKernelTask((uint64_t)&topBarTask);
   Core::runningQ[get_core()]->insert(topBar); */
 
-  // Core::spinms(1000);
   Core::start(1, &init_core);
-  // Core::spinms(1000);
   Core::start(2, &init_core);
-  // Core::spinms(1000);
   Core::start(3, &init_core);
   Console::print("All cores UP!\n");
-  Core::spinms(100);
   Core::enableIRQ();
+
   SystemTimer::WaitMicroT1(100000);
 
   _hang_forever();

@@ -8,6 +8,7 @@
  */
 #ifndef ARRAYLIST_H_
 #define ARRAYLIST_H_
+#include <stddef.h>
 
 template <class T>
 class ArrayList {

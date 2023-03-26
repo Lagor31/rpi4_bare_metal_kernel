@@ -10,6 +10,7 @@
 #include "include/IO.h"
 #include "include/Mailbox.h"
 #include "include/Mem.h"
+#include "include/Pstate.h"
 #include "include/Stdlib.h"
 #include "include/SystemTimer.h"
 
@@ -33,7 +34,7 @@ void screenTask() {
                     current->pid, get_core()); */
   _begin:
 
-    fb_lock->getLock();
+    fb_lock->get();
     if (circles->getSize() > 0) {
       drawMe = *circles->get(0);
 
@@ -48,10 +49,10 @@ void screenTask() {
       delete drawMe;
       Core::enableIRQ();
       Core::preemptEnable();
-      fb_lock->release();
+      fb_lock->free();
 
     } else {
-      fb_lock->release();
+      fb_lock->free();
       goto _sleep;
     }
 
@@ -78,7 +79,10 @@ void kernelTask() {
     paintMe->fill = 1;
     paintMe->radius = radius;
     // Console::print("Printing Circle form PID=%d On Core=%d!\n", pid, core);
+    /*  uint32_t pstate = read_pstate();
+     Console::print("PSTATE: 0x%x\n", pstate); */
     paintCircle(paintMe);
+    current->sleep(1000);
   }
   _hang_forever();
 }
@@ -86,12 +90,16 @@ void kernelTask() {
 void Task::sleep(uint64_t ms) {
   Task* curr = current;
   curr->timer = SystemTimer::getCounter() + ms * (uint64_t)1000;
-  GIC400::send_sgi(SYSTEM_SLEEP_IRQ, get_core());
+  sleep();
 }
 
 uint64_t Task::freePID = 1;
+extern void reschedule(CoreContext* regs);
+
+void Task::sleep() { GIC400::send_sgi(SYSTEM_SLEEP_IRQ, get_core()); }
 
 Task::Task() { premption = 0; }
+
 bool Task::isPinnedToCore() { return this->isCorePinned; }
 void Task::pinToCore(uint32_t core) {
   if (core > (NUM_CORES - 1)) return;

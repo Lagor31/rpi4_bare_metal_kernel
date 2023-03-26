@@ -331,7 +331,6 @@ map_high:
     msr sp_el0, x28
 	ldp	x28, x29, [sp, #16 * 14]
 	add	sp,  sp,  #16 * 18
-    //msr     SPSel, #0
  
 	eret
 

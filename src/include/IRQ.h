@@ -6,6 +6,11 @@
 #include "Mem.h"
 #include "Spinlock.h"
 
+#include "Task.h"
+
+
+uint32_t calcNextCore(Task* t);
+
 extern "C" void enable_irq();
 extern "C" void disable_irq();
 // void disable_interrupt_controller();
@@ -28,16 +33,7 @@ struct core_context {
   uint64_t lr;
 };
 
-struct CoreContext {
-  uint64_t gpr[30];
-  /// The link register, aka x30.
-  uint64_t lr;
-  uint64_t elr_el1;
-  uint64_t sprs_el1;
-  uint64_t esr_el1;
-  uint64_t sp_el0;
-  uint64_t far_el1;
-} __attribute__((packed));
+
 
 struct arm_irq_regs_2711 {
   volatile unsigned int irq0_pending_0;

@@ -29,7 +29,7 @@ void *KernelHeapAllocator::alloc(unsigned size) {
   // if (size > bytes_left) Core::panic("FInished memory in simple
   // allocator!\n");
 
-  l.getLock();
+  l.spin();
   void *out;
   out = buddy_malloc(buddy, size);
   l.release();
@@ -65,7 +65,7 @@ void *KernelHeapAllocator::alloc(unsigned size) {
   return out;
 };
 void KernelHeapAllocator::free(void *p) {
-  l.getLock();
+  l.spin();
   buddy_free(buddy, p);
   allocations--;
 

@@ -6,7 +6,7 @@
 #include "../include/Mem.h"
 #include "../include/SystemTimer.h"
 
-GIC400::GIC400() {};
+GIC400::GIC400(){};
 
 void GIC400::print_gic_state() {
   /*
@@ -23,28 +23,28 @@ void GIC400::print_gic_state() {
   uint64_t reg = GICD_DIST_BASE + 8;
 
   Console::print(
-    "############################################\n\nGICC_CTLR: 0x%x  "
-    "GICC_PMR: 0x%x  GICC_BPR: 0x%x\n",
-    gic400.gicc->ctl, gic400.gicc->pm, gic400.gicc->bp);
+      "############################################\n\nGICC_CTLR: 0x%x  "
+      "GICC_PMR: 0x%x  GICC_BPR: 0x%x\n",
+      gic400.gicc->ctl, gic400.gicc->pm, gic400.gicc->bp);
   Console::print("GICID 0x%x OTHER: 0x%x\n", gic400.gicd->iid, MMIO::read(reg));
 
   Console::print("GICC_RPR: 0x%x  GICC_HPPIR: 0x%x\n", gic400.gicc->rp,
-    gic400.gicc->hppi);
+                 gic400.gicc->hppi);
   Console::print("GICC_ABPR: 0x%x  GICC_AHPPIR: 0x%x\n\n", gic400.gicc->abp,
-    gic400.gicc->ahppi);
+                 gic400.gicc->ahppi);
 
   Console::print("GICD_CTLR: 0x%x  GICD_TYPE: 0x%x  GICD_IGGRP0: 0x%x\n",
-    gic400.gicd->ctl, gic400.gicd->type, gic400.gicd->igroup[0]);
+                 gic400.gicd->ctl, gic400.gicd->type, gic400.gicd->igroup[0]);
   Console::print(
-    "GICD_ISENABLER0: 0x%x  GICD_ISPEND0: 0x%x  GICD_ISACTIVE: 0x%x\n",
-    gic400.gicd->isenable[0], gic400.gicd->ispend[0],
-    gic400.gicd->isactive[0]);
+      "GICD_ISENABLER0: 0x%x  GICD_ISPEND0: 0x%x  GICD_ISACTIVE: 0x%x\n",
+      gic400.gicd->isenable[0], gic400.gicd->ispend[0],
+      gic400.gicd->isactive[0]);
   Console::print("GICD_IPRI0: 0x%x  GICD_ITARGET0: 0x%x  GICD_ICFGR0: %x\n",
-    gic400.gicd->ipriority[0], gic400.gicd->istargets[0],
-    gic400.gicd->icfg[0]);
+                 gic400.gicd->ipriority[0], gic400.gicd->istargets[0],
+                 gic400.gicd->icfg[0]);
   Console::print("GICD_PPIS: 0x%x  GICD_SPI0: 0x%x  GICD_SPENSGI0: 0x%x\n",
-    gic400.gicd->ppis, gic400.gicd->spis[0],
-    gic400.gicd->spendsgi[0]);
+                 gic400.gicd->ppis, gic400.gicd->spis[0],
+                 gic400.gicd->spendsgi[0]);
 }
 
 void GIC400::enable_interrupt(unsigned int irq) {
@@ -117,6 +117,11 @@ void GIC400::init() {
   assign_target(SYSTEM_SLEEP_IRQ, 3);
   enable_interrupt(SYSTEM_SLEEP_IRQ);
 
+  assign_target(SYSTEM_WAKEUP_ALL, 0);
+  assign_target(SYSTEM_WAKEUP_ALL, 1);
+  assign_target(SYSTEM_WAKEUP_ALL, 2);
+  assign_target(SYSTEM_WAKEUP_ALL, 3);
+  enable_interrupt(SYSTEM_WAKEUP_ALL);
 
   gic400.gicc->ctl = GIC400_CTL_ENABLE;
   gic400.gicd->ctl = GIC400_CTL_ENABLE;

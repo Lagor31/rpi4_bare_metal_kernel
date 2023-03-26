@@ -72,7 +72,7 @@ void Console::print_no_lock(const char *format, ...) {
 
 void Console::print(const char *format, ...) {
   if (kernel_console == nullptr) return;
-  if (lock != NULL) lock->getLock();
+  if (lock != NULL) lock->spin();
 
   char **arg = (char **)&format;
   int c;

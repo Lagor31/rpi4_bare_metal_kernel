@@ -1,7 +1,24 @@
 #include "../include/Sysregs.h"
 #include "../include/MMU.h"
-
 .section ".text"
+
+
+.global _test_set_lock
+.type _test_set_lock, @function
+_test_set_lock:
+    mov	w2, #1
+	ldaxr	w1, [x0]
+	cbnz	w1, busy
+	stxr	w1, w2, [x0]
+    cbnz	w1, busy
+    mov x0, 1
+    b end
+    busy:
+    mov x0, 0
+
+    end: 
+	
+    ret
 
 .global _spin_lock
 .type _spin_lock, @function

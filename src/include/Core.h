@@ -7,6 +7,8 @@
 #include "List.h"
 #include "Task.h"
 
+#include "Spinlock.h"
+
 #define THREAD_N 500
 #define NUM_CORES 4
 #define current (Core::currentTask[get_core()])
