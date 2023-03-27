@@ -9,7 +9,7 @@
 
 #include "Spinlock.h"
 
-#define THREAD_N 500
+#define THREAD_N 100
 #define NUM_CORES 4
 #define current (Core::currentTask[get_core()])
 #define PRIORITIES 21

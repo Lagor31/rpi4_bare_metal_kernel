@@ -1,5 +1,5 @@
-#include "../include/Core.h"
 #include "../include/BuddyAlloc.h"
+#include "../include/Core.h"
 
 size_t buddy_sizeof(size_t memory_size) {
   if (memory_size < BUDDY_ALLOC_ALIGN) {
@@ -7,6 +7,27 @@ size_t buddy_sizeof(size_t memory_size) {
   }
   size_t buddy_tree_order = buddy_tree_order_for_memory(memory_size);
   return sizeof(struct buddy) + buddy_tree_sizeof(buddy_tree_order);
+}
+
+size_t buddy_arena_free_size(struct buddy *buddy) {
+  size_t result = 0;
+  struct buddy_tree *tree = buddy_tree(buddy);
+  size_t tree_order = buddy_tree_order(tree);
+
+  struct buddy_tree_walk_state state = buddy_tree_walk_state_root();
+  do {
+    size_t pos_status = buddy_tree_status(tree, state.current_pos);
+    if (pos_status ==
+        (tree_order - state.current_pos.depth + 1)) {  // Fully-allocated
+      state.going_up = 1;
+    } else if (pos_status == 0) {  // Free
+      state.going_up = 1;
+      result += size_for_depth(buddy, state.current_pos.depth);
+    } else {  // Partial
+      continue;
+    }
+  } while (buddy_tree_walk(tree, &state));
+  return result;
 }
 
 struct buddy *buddy_init(unsigned char *at, unsigned char *main,

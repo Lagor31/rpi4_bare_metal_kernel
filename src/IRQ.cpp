@@ -243,6 +243,7 @@ extern "C" void irq_handler_spx(CoreContext* regs) {
 
       Console::print_no_lock("System Timer Compare0: %x\n", timer->compare0);
       Console::print_no_lock("Allocations: %d\n", allocations);
+      Console::print_no_lock("Free MEM: %d\n", GlobalKernelAlloc::freeSpace());
       Console::print_no_lock("\n\n");
       break;
 
@@ -281,6 +282,7 @@ void printRegs(CoreContext* regs) {
 
   Console::print_no_lock("Current PID: %d\n", current->pid);
   Console::print_no_lock("Allocation: %d\n", allocations);
+  Console::print_no_lock("Free MEM: %d\n", GlobalKernelAlloc::freeSpace());
 }
 
 extern "C" void sync_handler_sp0(CoreContext* regs) {

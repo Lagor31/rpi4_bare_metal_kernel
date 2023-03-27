@@ -22,7 +22,7 @@ KernelHeapAllocator::KernelHeapAllocator(unsigned char *s, unsigned char *e) {
 };
 
 unsigned long KernelHeapAllocator::freeSpace() {
-  return buddy_arena_size(buddy);
+  return buddy_arena_free_size(buddy);
 }
 
 void *KernelHeapAllocator::alloc(unsigned size) {

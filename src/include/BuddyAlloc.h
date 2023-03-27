@@ -51,6 +51,8 @@ unsigned int buddy_is_empty(struct buddy *buddy);
 /* Reports the arena size */
 size_t buddy_arena_size(struct buddy *buddy);
 
+size_t buddy_arena_free_size(struct buddy *buddy);
+
 /*
  * Allocation functions
  */

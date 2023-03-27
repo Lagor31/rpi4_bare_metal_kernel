@@ -38,6 +38,6 @@ void Spinlock::free() {
 }
 
 void Spinlock::release() {
-  _spin_unlock(&this->l.val);
   ownerPid = 0;
+  _spin_unlock(&this->l.val);
 }
